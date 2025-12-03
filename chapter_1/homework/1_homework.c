@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <limits.h>
+#include <assert.h>
 
 typedef unsigned char *byte_pointer;
 
@@ -136,7 +137,7 @@ int any_odd_one(unsigned x)
     return !!(x & mask);
 }
 
-// 2.66
+// 2.66  *
 
 /*
  * Generate mask indicating leftmost 1 in x. Assume w = 32.
@@ -157,9 +158,86 @@ int leftmost_one(unsigned x)
 
 }
 
+int offer_leftmost_one(unsigned x)
+{
+    /*
+     * first, generate a mask that all bits after leftmost one are one
+     * e.g. 0xFF00 -> 0xFFFF, and 0x6000 -> 0x7FFF
+     * If x = 0, get 0
+     */
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    /*
+     * then, do (mask >> 1) + (mask && 1), in which mask && 1 deals with case x = 0, reserve leftmost bit one
+     * that's we want
+     */
+    return (x >> 1) + (x && 1);
+}
+
+// 2.67  *
+/* The following code does not run properly on some machine */
+// A:如果右移数值为负或大于或等于字长则结果未定义
+
+int bad_int_size_is_32_B()
+{
+    /* Set most significant bit (msb) of 32-bit machine */
+    int set_msb = 1 << 31;
+    /* Shift past msb of 32-bit word */
+    int beyond_msb = set_msb << 1;
+    /* set_msb is nonzero when word size >= 32 beyond_msb is zero when word size <= 32 */
+    return set_msb && !beyond_msb;
+}
+
+int bad_int_size_is_32_C()
+{
+    /* Set most significant bit (msb) of 32-bit machine */
+    int set_msb = 1 << 15 << 15 << 1;
+    /* Shift past msb of 32-bit word */
+    int beyond_msb = set_msb << 1;
+    /* set_msb is nonzero when word size >= 32 beyond_msb is zero when word size <= 32 */
+    return set_msb && !beyond_msb;
+}
+
+// 2.68
+/*
+ * Mask with least signficant n bits set to 1.
+ * Examples: n = 6 --> 0x3F, n = 17 --> 0x1FFFF
+ * Assume 1 <= n <= w 
+*/
+int lower_one_mask(int n)
+{
+    return (1 << n) - 1;
+}
+
+// 2.69 
+/*
+ * Do rotating left shift. Assume 0 <= n < w
+ * Example: when x = 0x123455678 and w = 32:
+ * n = 4 --> 0x23456781, n = 20 --> 0x67812345
+ */
+unsigned rotate_left(unsigned x, int n)
+{
+    return (x << n) | (x >> (32 - n));
+}
+
+// 2.70
+/*
+ * Return 1 when x can be represented as an n-bit, 2's-complement
+ * number; 0 otherwise
+ * Assume 1 <= n <= w
+ */
+int fits_bits(int x, int n)
+{
+    
+}
+
 int main() 
 {
-    printf("Hello, World!\r\n");
+    printf("\r\nHello, World!\r\n");
+    /*
     show_different_examples();
     printf("当前机器是否为小端序:%d\r\n", is_little_endian());
     printf("replace_byte(0x12345678,2,0xAB) = %#x\r\n", replace_byte(0x12345678, 2, 0xAB));
@@ -176,6 +254,15 @@ int main()
     printf("xlsbis1(0x002000F1) = %d\r\n", xlsbis1(0x002000F1));
     printf("xmsbis0(0x002000F1) = %d\r\n", xmsbis0(0x002000F1));
     printf("xmsbis0(0x012000F1) = %d\r\n", xmsbis0(0x012000F1));
-    printf("int_shifts_are_arithmetic = %d\r\n", int_shifts_are_arithmetic());
+    printf("int_shifts_are_arithmetic = %d\r\n", int_shifts_are_arithmetic());*/
+    assert(leftmost_one(0xFF00) == 0x8000);
+    assert(leftmost_one(0x6600) == 0x4000);
+    assert(bad_int_size_is_32_B());
+    assert(bad_int_size_is_32_C());
+    assert(lower_one_mask(6) == 0x3F);
+    assert(lower_one_mask(17) == 0x1FFFF);
+    assert(rotate_left(0x12345678, 4) == 0x23456781);
+    assert(rotate_left(0x12345678, 20) == 0x67812345);
+    assert(rotate_left(0x11111111,0) == 0x11111111);
     return 0;
 }
