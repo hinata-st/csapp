@@ -231,8 +231,75 @@ unsigned rotate_left(unsigned x, int n)
  */
 int fits_bits(int x, int n)
 {
-    
+    return !((unsigned int)x >> (n - 1) >> 1);
 }
+
+// 2.71
+/* Declaration of data type where 4 bytes are packed into an unsigned */
+typedef unsigned packed_t;
+
+/* Extract byte from word.Return as signed integer */
+int xbyte(packed_t word, int bytenum)
+{
+    return word << ((3 - bytenum) << 3) >> 24;
+}
+
+//A :没有处理符号位
+
+// 2.72
+/* Copy integer into buffer if space is available */
+/* WARNING : The following code is buggy */
+void copy_int(int val, void *buf, int maxbytes)
+{
+    if (maxbytes-sizeof(val) >= 0)
+    {
+        memcpy(buf, (void *)&val, sizeof(val));
+    }
+}
+// A : maxbytes - sizeof(val) 可能会溢出变成负数
+//
+void copy_int_fix(int val, void *buf, int maxbytes)
+{
+    if (maxbytes >= sizeof(val))
+    {
+        memcpy(buf, (void *)&val, sizeof(val));
+    }
+}
+
+// 2.73
+/* Addition that saturates to Tmin or Tmax */
+int saturating_add(int x, int y)
+{
+    int sum = x + y;
+    int w = sizeof(int) << 3;
+    // sign bit : 0 正数 1 负数 
+    int sign_x = !!(x >> (w - 1));
+    int sign_y = !!(y >> (w - 1));
+    int sign_sum = !!(sum >> (w - 1));
+    int overflow_1 = (!sign_x & !sign_y) & sign_sum; // 正溢出
+    int overflow_2 = (sign_x & sign_y) & !sign_sum; // 负溢出
+    int tmax = ~(1 << (w - 1));
+    int tmin = 1 << (w - 1);
+    int temp = (overflow_1 && (sum = tmax) || (overflow_2 && (sum = tmin)) || (!(overflow_1 | overflow_2) && sum));
+    return sum;
+}
+
+// 2.74
+/* Determine whether arguments can be subtracted without overflow */
+int tsub_ok(int x, int y)
+{
+    int y_neg = -y;
+    int sum = x + y_neg;
+    int w = sizeof(int) << 3;
+    int sign_x = !!(x >> (w - 1));
+    int sign_y = !!(y_neg >> (w - 1));
+    int sign_sum = !!(sum >> (w - 1));
+    int overflow = ((sign_x & sign_y) & !sign_sum) || ((!sign_x & !sign_y) & sign_sum); // 溢出
+    return !overflow;
+}
+
+// 2.75
+
 
 int main() 
 {
@@ -264,5 +331,17 @@ int main()
     assert(rotate_left(0x12345678, 4) == 0x23456781);
     assert(rotate_left(0x12345678, 20) == 0x67812345);
     assert(rotate_left(0x11111111,0) == 0x11111111);
+    assert(fits_bits(0xffffffff, 32) == 1);
+    assert(fits_bits(-16, 4) == 0);
+    assert(xbyte(0x12345678, 0) == 0x78);
+    assert(xbyte(0x12345678, 1) == 0x56);
+    assert(xbyte(0x12345678, 2) == 0x34);
+    assert(xbyte(0x12345678, 3) == 0x12);
+    assert(saturating_add(0x7FFFFFFF, 1) == 0x7FFFFFFF);
+    assert(saturating_add(0x80000000, -1) == 0x80000000);
+    assert(saturating_add(0x00000004, 0x00000005) == 0x00000009);
+    assert(tsub_ok(0x80000000, 1) == 0);
+    assert(tsub_ok(0x7FFFFFFF, -1) == 0);
+    assert(tsub_ok(0x00000005, 0x00000003) == 1);
     return 0;
 }

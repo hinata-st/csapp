@@ -10,20 +10,17 @@ void show_bytes(byte_pointer start, size_t len)
     {
         printf(" %.2x", start[i]);
     }
-    printf("\n");
+    printf("\r\n");
 }
 
 int main()
 {
-    int a = INT_MIN;
-    int b = -a;
-
-    int c = 8;
-    int d = -c;
-
-    show_bytes((byte_pointer)&a, sizeof(int));
-    show_bytes((byte_pointer)&b, sizeof(int));
-    show_bytes((byte_pointer)&c, sizeof(int));
-    show_bytes((byte_pointer)&d, sizeof(int));
+    int aa = 0x12345678;
+    int a = 1;
+    int b = 2;
+    printf("\r\n hello,world!\r\n");
+    show_bytes((byte_pointer)&aa, sizeof(int));
+    b = (1 & (a = 2)) | (0 & (a = 3));
+    printf("a = %d, b = %d\r\n", a, b);
     return 0;
 }
