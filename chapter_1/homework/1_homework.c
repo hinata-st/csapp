@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <limits.h>
 #include <assert.h>
+#include <inttypes.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef unsigned char *byte_pointer;
 
@@ -14,6 +17,10 @@ void show_bytes(byte_pointer start, size_t len)
     }
     printf("\r\n");
 }
+
+///////////////////////////////////////////////////////
+// homework    * : 已订正答案    x : 不会
+////////////////////////////////////////////////////////
 
 // 2.55
 // 2.56 ：用不同的示例值来运行show_bytes的代码
@@ -298,7 +305,145 @@ int tsub_ok(int x, int y)
     return !overflow;
 }
 
-// 2.75
+// 2.75 *
+/*
+unsigned int unsigned_high_prod(unsigned int x, unsigned int y)
+{
+    unsigned long long int temp =  (unsigned long long int)x * (unsigned long long int)y;
+    return temp >> 31 >> 1;
+}
+int signed_high_prod(int x, int y)
+{
+    long long int temp =  (long long int)x * (long long int)y;
+    return temp >> 31 >> 1;
+}*/
+
+int signed_high_prod(int x, int y)
+{
+    int64_t mul = (int64_t)x * y;
+    return (mul >> 32);
+}
+
+
+unsigned unsigned_high_prod(unsigned x, unsigned y)
+{
+    int sig_x = x >> 31;
+    int sig_y = y >> 31;
+    int signed_prod = signed_high_prod(x, y);
+    return signed_prod + sig_x * y + sig_y * x;
+}
+
+/* a theorically correct version to test unsigned_high_prod func */
+unsigned another_unsigned_high_prod(unsigned x, unsigned y)
+{
+    uint64_t mul = (uint64_t)x * y;
+    return (mul >> 32);
+}
+
+// 2.76
+void *calloc(size_t nmemb, size_t size)
+{
+    if (nmemb == 0 || size == 0)
+        return NULL;
+    size_t total_size = nmemb * size;
+    void *ptr = malloc(total_size);
+    if (ptr)
+        memset(ptr, 0, total_size);
+    return ptr;
+}
+
+// 2.77
+
+// A : K = 17 : x << 4 + x
+// B : k = -7 : -( x << 3 - x)
+// c : K = 60 : x << 6 - x << 2
+// D : K = -112 : -( x << 7 - x << 4)
+
+// 2.78  *
+/* Divide by power of 2. Assume 0 <= k <= w-1 */
+int divide_power2(int x, int k)
+{
+    int is_neg = x & INT_MIN;
+    (is_neg) && (x = x + (1 << k) - 1);
+    return x >> k;
+}
+
+// 2.79 *
+int my_mul3div4(int x)
+{
+    int mul3 = (x << 1) + x;
+    int sign = mul3 >> 31;
+    // 生成掩码
+    int bias = sign & 3;
+    return (mul3 + bias) >> 2;
+}
+
+int mul3div4(int x)
+{
+    int mul3 = (x << 1) + x;
+    return divide_power2(mul3, 2);
+}
+
+// 2.80  *  ×   题目有误,是计算 x * 3/4  不是 3/(4x)
+int my_threefouths(int x)
+{
+    int sign = x >> 31;
+    int bias = sign & 3;
+    int div4 = (x + bias) >> 2;
+    return div4 + (div4 << 1);
+}
+
+/*
+ * calculate 3/4x, no overflow, round to zero
+ *
+ * no overflow means divide 4 first, then multiple 3, diffrent from 2.79 here
+ *
+ * rounding to zero is a little complicated.
+ * every int x, equals f(first 30 bit number) plus l(last 2 bit number)
+ *
+ *   f = x & ~0x3
+ *   l = x & 0x3
+ *   x = f + l
+ *   threeforths(x) = f/4*3 + l*3/4
+ *
+ * f doesn't care about round at all, we just care about rounding from l*3/4
+ *
+ *   lm3 = (l << 1) + l
+ *
+ * when x > 0, rounding to zero is easy
+ *
+ *   lm3d4 = lm3 >> 2
+ *
+ * when x < 0, rounding to zero acts like divide_power2 in 2.78
+ *
+ *   bias = 0x3    // (1 << 2) - 1
+ *   lm3d4 = (lm3 + bias) >> 2
+ */
+int threeforths(int x)
+{
+    
+    int is_neg = x & INT_MIN;
+
+    // 拆分 x (目的：比起/ 4 * 3,保留了更高的精度,因为低位可以先 * 3 再 /4,减少了除法带来的误差)
+    int f = x & ~0x3; // 高位部分，清除最后2位(前30位，能被4整除)
+    int l = x & 0x3;  // 低位部分，只保留最后2位(后2位,0,1,2,3)
+    // 计算高位部分的 3/4
+    int fd4 = f >> 2;
+    int fd4m3 = (fd4 << 1) + fd4;
+    // 计算低位部分的3/4
+    int lm3 = (l << 1) + l;
+    int bias = (1 << 2) - 1;
+    (is_neg && (lm3 += bias));
+    int lm3d4 = lm3 >> 2;
+
+    return fd4m3 + lm3d4;
+}
+
+// 2.81
+// A : ~((0x1 << k) - 1)
+// B : ((0x1 << k) - 1) << j
+
+// 2.82
 
 
 int main() 
@@ -343,5 +488,24 @@ int main()
     assert(tsub_ok(0x80000000, 1) == 0);
     assert(tsub_ok(0x7FFFFFFF, -1) == 0);
     assert(tsub_ok(0x00000005, 0x00000003) == 1);
+    assert(unsigned_high_prod(0x80000000, 0x00000004) == 0x00000002);
+    assert(signed_high_prod(0x40000000, 0x00000004) == 0x00000001);
+    assert(another_unsigned_high_prod(0x12345678, 0xFFFFFFFF) == unsigned_high_prod(0x12345678, 0xFFFFFFFF));
+    int x = 2;
+    assert((x * 17) == (x << 4) + x);
+    assert((x * -7) == -((x << 3) - x));
+    assert((x * 60) == (x << 6) - (x << 2));
+    assert((x * -112) == -((x << 7) - (x << 4)));
+    x = 0x80000007;
+    assert(divide_power2(x, 1) == (x / 2));
+    assert(divide_power2(x, 2) == (x / 4));
+    x = 0x87654321;
+    assert(my_mul3div4(x) == (x * 3) / 4);
+    assert(mul3div4(x) == (x * 3) / 4);
+    assert(threeforths(-8) == -6);
+    assert(threeforths(-9) == -6);
+    assert(threeforths(-10) == -7);
+    assert(threeforths(-11) == -8);
+    assert(threeforths(-12) == -9);
     return 0;
 }
