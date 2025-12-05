@@ -445,6 +445,247 @@ int threeforths(int x)
 
 // 2.82
 
+/* Access bit-level representation floating-point number */
+typedef unsigned float_bits;
+
+/* If f is denorm, return 0, Otherwise,return f */
+float_bits float_denorm_zero(float_bits f)
+{
+    /* Decompose bit repressentation into parts */
+    unsigned sign = f >> 31;
+    unsigned exp = f >> 23 & 0xFF;
+    unsigned frac = f & 0x7FFFFF;
+    if (exp == 0)
+    {
+        /* Denormalized. Set fraction to 0 */
+        frac = 0;
+    }
+    /* Reassemble bits */
+    return (sign << 31) | (exp << 23) | frac;
+}
+// 2.92
+/* Compute -f. If f is NaN, then return f. */
+float_bits float_negate(float_bits f)
+{
+    /* Decompose bit representation into parts */
+    unsigned sign = f >> 31;
+    unsigned exp = (f >> 23) & 0xFF;
+    unsigned frac = f & 0x7FFFFF;
+    /* Check for NaN */
+    if (exp == 0xFF && frac != 0)
+    {
+        /* Return argument if NaN */
+        return f;
+    }
+    /* Negate sign bit */
+    sign = !sign;
+    /* Reassemble bits */
+    return (sign << 31) | (exp << 23) | frac;
+}
+
+// 2.93
+/* Compute |f|. If f is NaN, then return f. */
+float_bits float_absval(float_bits f)
+{
+    /* Decompose bit representation into parts */
+    unsigned sign = f >> 31;
+    unsigned exp = (f >> 23) & 0xFF;
+    unsigned frac = f & 0x7FFFFF;
+    /* Check for NaN */
+    if (exp == 0xFF && frac != 0)
+    {
+        /* Return argument if NaN */
+        return f;
+    }
+    /* Clear sign bit to get absolute value */
+    sign = 0;
+    /* Reassemble bits */
+    return (sign << 31) | (exp << 23) | frac;
+}
+
+// 2.94
+/* Compute 2*f .If f is NaN, then return f. */
+float_bits float_twice(float_bits f)
+{
+    /* Decompose bit representation into parts */
+    unsigned sign = f >> 31;
+    unsigned exp = (f >> 23) & 0xFF;
+    unsigned frac = f & 0x7FFFFF;
+    /* Check for NaN */
+    if (exp == 0xFF && frac != 0)
+    {
+        /* Return argument if NaN */
+        return f;
+    }
+    if (exp == 0)
+    {
+        /* Denormalized. Shift fraction */
+        frac = frac << 1;
+    }
+    else 
+    {
+        /* Normalized. Increment exponent */
+        exp = exp + 1;
+    }
+    /* Reassemble bits */
+    return (sign << 31) | (exp << 23) | frac;
+}
+
+// 2.95
+/* Compute 0.5*f. If f is NaN, then return f. */
+float_bits float_half(float_bits f)
+{
+    /* Decompose bit representation into parts */
+    unsigned sign = f >> 31;
+    unsigned exp = (f >> 23) & 0xFF;
+    unsigned frac = f & 0x7FFFFF;
+    /* Check for NaN */
+    if (exp == 0xFF && frac != 0)
+    {
+        /* Return argument if NaN */
+        return f;
+    }
+    if (exp == 0)
+    {
+        /* Denormalized. Shift fraction */
+        frac = frac >> 1;
+    }
+    else 
+    {
+        /* Normalized. Decrement exponent */
+        exp = exp - 1;
+    }
+    /* Reassemble bits */
+    return (sign << 31) | (exp << 23) | frac;
+}
+
+// 2.96 *
+/*
+ * Compute (int) f.
+ * If conversion cause overflow of f is NaN, return 0x80000000
+*/
+int float_f2i(float_bits f)
+{
+    /* Decompose bit representation into parts */
+    unsigned sign = f >> 31;
+    unsigned exp = (f >> 23) & 0xFF;
+    unsigned frac = f & 0x7FFFFF;
+    int E = exp - 127; // exponent bias = 127
+    unsigned M;
+    int val;
+    /* Check for NaN and infinity */
+    if (exp == 0xFF)
+    {
+        return 0x80000000;
+    }
+    /* Denormalized */
+    if (exp == 0)
+    {
+        M = frac;
+        E = -126;
+    }
+    else 
+    {
+        M = frac | 0x800000; // add implicit leading 1
+    }
+    /* Handle cases */
+    if (E < 0)
+    {
+        /* Absolute value less than 1 */
+        val = 0;
+    }
+    else if (E > 31)
+    {
+        /* Overflow */
+        val = 0x80000000;
+    }
+    else if (E > 23)
+    {
+        val = M << (E - 23);
+    }
+    else 
+    {
+        val = M >> (23 - E);
+    }
+    /* Apply sign */
+    if (sign)
+    {
+        val = -val;
+    }
+    return val;
+}
+
+/*
+ * Compute (float) f
+ * If conversion cause overflow or f is NaN, return 0x80000000
+ */
+int offerfloat_f2i(float_bits f)
+{
+    unsigned sig = f >> 31;
+    unsigned exp = f >> 23 & 0xFF;
+    unsigned frac = f & 0x7FFFFF;
+    unsigned bias = 0x7F;
+
+    int num;
+    unsigned E;
+    unsigned M;
+
+    /*
+     * consider positive numbers
+     *
+     * 0 00000000 00000000000000000000000
+     *   ===>
+     * 0 01111111 00000000000000000000000
+     *   0 <= f < 1
+     * get integer 0
+     *
+     * 0 01111111 00000000000000000000000
+     *   ===>
+     * 0 (01111111+31) 00000000000000000000000
+     *   1 <= f < 2^31
+     * integer round to 0
+     *
+     * 0 (01111111+31) 00000000000000000000000
+     *   ===>
+     * greater
+     *   2^31 <= f < oo
+     * return 0x80000000
+     */
+    if (exp >= 0 && exp < 0 + bias)
+    {
+        /* number less than 1 */
+        num = 0;
+    }
+    else if (exp >= 31 + bias)
+    {
+        /* number overflow */
+        /* or f < 0 and (int)f == INT_MIN */
+        num = 0x80000000;
+    }
+    else
+    {
+        E = exp - bias;
+        M = frac | 0x800000;
+        if (E > 23)
+        {
+            num = M << (E - 23);
+        }
+        else
+        {
+            /* whether sig is 1 or 0, round to zero */
+            num = M >> (23 - E);
+        }
+    }
+
+    return sig ? -num : num;
+}
+
+// 2.97
+/* Compute (float) i */
+float_bits float_i2f(int i)
+{
+    
+}
 
 int main() 
 {
@@ -507,5 +748,11 @@ int main()
     assert(threeforths(-10) == -7);
     assert(threeforths(-11) == -8);
     assert(threeforths(-12) == -9);
+    assert(float_negate(0x7F800001) == 0x7F800001); // NaN
+    assert(float_absval(0x7F800001) == 0x7F800001); // NaN
+    assert(float_negate(0xBF800000) == (unsigned)0x3F800000); // -1.0 -> 1.0
+    assert(float_absval(0xBF800000) == (unsigned)0x3F800000); // -1.0 -> 1.0
+    printf("If you look at is,you have pass!\r\n");
+
     return 0;
 }
