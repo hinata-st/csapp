@@ -58,6 +58,18 @@ int is_little_endian()
     return p[0] == 1;
 }
 
+int offer_is_little_endian()
+{
+    int test_num = 0xff;
+    byte_pointer byte_start = (byte_pointer)&test_num;
+
+    if (byte_start[0] == 0xff)
+    {
+        return 1;
+    }
+    return 0;
+}
+
 // 2.59 编写一个c表达式,他生成一个字，由x的最低有效字节和y中剩下的字节组成，对于运算数x = 0x89abcdef和y = 0x76543210,该表达式的值为0x765432ef
 unsigned int combine_bytes(unsigned int x, unsigned int y) 
 {
@@ -69,6 +81,26 @@ unsigned int replace_byte(unsigned int x, int i, unsigned char b)
 {
     unsigned int num = 0xFFFFFFFF & ~(0xFF << (i * 8));
     return (x & num) | (b << (i * 8));
+}
+
+unsigned offer_replace_byte(unsigned x, int i, unsigned char b)
+{
+    if (i < 0)
+    {
+        printf("error: i is negetive\n");
+        return x;
+    }
+    if (i > sizeof(unsigned) - 1)
+    {
+        printf("error: too big i");
+        return x;
+    }
+
+    // 1 byte has 8 bits, << 3 means * 8
+    unsigned mask = ((unsigned)0xFF) << (i << 3);
+    unsigned pos_byte = ((unsigned)b) << (i << 3);
+
+    return (x & ~mask) | pos_byte;
 }
 
 // 位级整数编码规则：
@@ -89,7 +121,7 @@ unsigned int replace_byte(unsigned int x, int i, unsigned char b)
 // INT_MAX, INT_MIN
 // 对int和unsigned int的转换
 
-// 2.61 : 
+// 2.61 : *
 int xallbitis1(int x)
 {
     return !~x;
@@ -109,15 +141,41 @@ int xmsbis0(int x)
 {
     return !((x & (0xff << (sizeof(int) - 1) * 8)) | 0x00);
 }
+//-------------------offer solution-----------------------
+int offerA(int x)
+{
+    return !~x;
+}
 
-// 2.62
+int offerB(int x)
+{
+    return !x;
+}
+
+int offerC(int x)
+{
+    return offerA(x | ~0xff);
+}
+
+int offerD(int x)
+{
+    return offerB((x >> ((sizeof(int) - 1) << 3)) & 0xff);
+}
+//--------------------------
+// 2.62 *
 int int_shifts_are_arithmetic()
 {
     int x = -1;
     return (x >> 1) == -1;
 }
-
-// 2.63
+//-------------------------------offer solution-----------------------
+int offer_int_shifts_are_arithemetic()
+{
+    int num = -1;
+    return !(num ^ (num >> 1));
+}
+//------------------------------------------------------------------
+// 2.63 *
 unsigned srl(unsigned x, int k)
 {
     /* Perform shift arithmetically */
@@ -135,8 +193,29 @@ unsigned sra(unsigned x, int k)
     unsigned mask = (1u << (w - k)) - 1;
     return xsrl | ~mask;
 }
+//------------------------------offer solution-----------------------
+unsigned offer_srl(unsigned x, int k)
+{
+    unsigned xsra = (int)x >> k;
 
-// 2.64
+    int w = sizeof(int) << 3;
+    int mask = (int)-1 << (w - k);
+    return xsra & ~mask;
+}
+
+int offer_sra(int x, int k)
+{
+    int xsrl = (unsigned)x >> k;
+
+    int w = sizeof(int) << 3;
+    int mask = (int)-1 << (w - k);
+    // let mask remain unchanged when the first bit of x is 1, otherwise 0.
+    int m = 1 << (w - 1);
+    mask &= !(x & m) - 1;
+    return xsrl | mask;
+}
+//------------------------------------------------------------------
+// 2.64 *
 /* Return 1 when any odd bit of x equals 1; 0 otherwise. Assume w = 32 */
 int any_odd_one(unsigned x)
 {
@@ -208,7 +287,7 @@ int bad_int_size_is_32_C()
     return set_msb && !beyond_msb;
 }
 
-// 2.68
+// 2.68  *
 /*
  * Mask with least signficant n bits set to 1.
  * Examples: n = 6 --> 0x3F, n = 17 --> 0x1FFFF
@@ -216,10 +295,22 @@ int bad_int_size_is_32_C()
 */
 int lower_one_mask(int n)
 {
+    // 边界有问题 w = 32
     return (1 << n) - 1;
 }
-
-// 2.69 
+//------------------------------offer solution-----------------------
+/*
+ * Mask with least signficant n bits set to 1
+ * Example: n = 6 -> 0x3F, n = 17 -> 0x1FFFF
+ * Assume 1 <= n <= w
+ */
+int offer_lower_one_mask(int n)
+{
+    int w = sizeof(int) << 3;
+    return (unsigned)-1 >> (w - n);
+}
+//------------------------------------------------------------------
+// 2.69 *
 /*
  * Do rotating left shift. Assume 0 <= n < w
  * Example: when x = 0x123455678 and w = 32:
@@ -229,8 +320,20 @@ unsigned rotate_left(unsigned x, int n)
 {
     return (x << n) | (x >> (32 - n));
 }
-
-// 2.70
+//------------------------------offer solution-----------------------
+/*
+ * Do rotate left shift. Assume 0 <= n < w
+ * Example when x = 0x12345678 and w = 32:
+ *   n = 4 -> 0x23456781, n = 20 -> 0x67812345
+ */
+unsigned offer_rotate_left(unsigned x, int n)
+{
+    int w = sizeof(unsigned) << 3;
+    /* pay attention when n == 0 */
+    return x << n | x >> (w - n - 1) >> 1;
+}
+//------------------------------------------------------------------
+// 2.70  *
 /*
  * Return 1 when x can be represented as an n-bit, 2's-complement
  * number; 0 otherwise
@@ -240,20 +343,40 @@ int fits_bits(int x, int n)
 {
     return !((unsigned int)x >> (n - 1) >> 1);
 }
-
-// 2.71
+//------------------------------offer solution-----------------------
+int offer_fits_bits(int x, int n)
+{
+    /*
+     * 1 <= n <= w
+     *
+     * assume w = 8, n = 3
+     * if x > 0
+     *   0b00000010 is ok, 0b00001010 is not, and 0b00000110 is not yet (thanks itardc@163.com)
+     * if x < 0
+     *   0b11111100 is ok, 0b10111100 is not, and 0b11111000 is not yet
+     *
+     * the point is
+     *   x << (w-n) >> (w-n) must be equal to x itself.
+     *
+     */
+    int w = sizeof(int) << 3;
+    int offset = w - n;
+    return (x << offset >> offset) == x;
+}
+//------------------------------------------------------------------
+// 2.71 *
 /* Declaration of data type where 4 bytes are packed into an unsigned */
 typedef unsigned packed_t;
 
 /* Extract byte from word.Return as signed integer */
 int xbyte(packed_t word, int bytenum)
 {
-    return word << ((3 - bytenum) << 3) >> 24;
+    return (int)word << ((3 - bytenum) << 3) >> 24;
 }
 
 //A :没有处理符号位
 
-// 2.72
+// 2.72  *
 /* Copy integer into buffer if space is available */
 /* WARNING : The following code is buggy */
 void copy_int(int val, void *buf, int maxbytes)
@@ -267,13 +390,23 @@ void copy_int(int val, void *buf, int maxbytes)
 //
 void copy_int_fix(int val, void *buf, int maxbytes)
 {
+    // 应该将 sizeof(val) 转换成int类型再进行比较
     if (maxbytes >= sizeof(val))
     {
         memcpy(buf, (void *)&val, sizeof(val));
     }
 }
 
-// 2.73
+void offer_copy_int(int val, void *buf, int maxbytes)
+{
+    /* compare two signed number, avoid someone set maxbytes a negetive value */
+    if (maxbytes >= (int)sizeof(val))
+    {
+        memcpy(buf, (void *)&val, sizeof(val));
+    }
+}
+
+// 2.73 *
 /* Addition that saturates to Tmin or Tmax */
 int saturating_add(int x, int y)
 {
@@ -290,11 +423,29 @@ int saturating_add(int x, int y)
     int temp = (overflow_1 && (sum = tmax) || (overflow_2 && (sum = tmin)) || (!(overflow_1 | overflow_2) && sum));
     return sum;
 }
+//------------------------------offer solution-----------------------
+int saturating_add(int x, int y)
+{
+    int sum = x + y;
+    int sig_mask = INT_MIN;
+    /*
+     * if x > 0, y > 0 but sum < 0, it's a positive overflow
+     * if x < 0, y < 0 but sum >= 0, it's a negetive overflow
+     */
+    int pos_over = !(x & sig_mask) && !(y & sig_mask) && (sum & sig_mask);
+    int neg_over = (x & sig_mask) && (y & sig_mask) && !(sum & sig_mask);
 
-// 2.74
+    (pos_over && (sum = INT_MAX) || neg_over && (sum = INT_MIN));
+
+    return sum;
+}
+//------------------------------------------------------------------
+
+// 2.74 *
 /* Determine whether arguments can be subtracted without overflow */
 int tsub_ok(int x, int y)
 {
+    // 没有处理 y = INT_MIN 的情况
     int y_neg = -y;
     int sum = x + y_neg;
     int w = sizeof(int) << 3;
@@ -304,7 +455,24 @@ int tsub_ok(int x, int y)
     int overflow = ((sign_x & sign_y) & !sign_sum) || ((!sign_x & !sign_y) & sign_sum); // 溢出
     return !overflow;
 }
+//------------------------------offer solution-----------------------
+/* Determine whether arguments can be substracted without overflow */
+int offer_tsub_ok(int x, int y)
+{
+    int res = 1;
 
+    (y == INT_MIN) && (res = 0);
+    // if (y == INT_MIN) res = 0;
+
+    int sub = x - y;
+    int pos_over = x > 0 && y < 0 && sub < 0;
+    int neg_over = x < 0 && y > 0 && sub > 0;
+
+    res = res && !(pos_over || neg_over);
+
+    return res;
+}
+//------------------------------------------------------------------
 // 2.75 *
 /*
 unsigned int unsigned_high_prod(unsigned int x, unsigned int y)
@@ -324,7 +492,9 @@ int signed_high_prod(int x, int y)
     return (mul >> 32);
 }
 
-
+// xu*yu = (xs + x31 * 2^32) * (ys + y31 * 2^32)
+//     = xs*ys + x31*ys*2^32 + y31*xs*2^32 + x31*y31*2^64
+// 高32位 = signed_high_prod(x,y) + x31*ys + y31*xs
 unsigned unsigned_high_prod(unsigned x, unsigned y)
 {
     int sig_x = x >> 31;
@@ -346,12 +516,34 @@ void *calloc(size_t nmemb, size_t size)
     if (nmemb == 0 || size == 0)
         return NULL;
     size_t total_size = nmemb * size;
+    // 没有检查溢出
     void *ptr = malloc(total_size);
     if (ptr)
         memset(ptr, 0, total_size);
     return ptr;
 }
-
+//-----------offer solution -----------
+/* rename to avoid conflict */
+void *another_calloc(size_t nmemb, size_t size)
+{
+    if (nmemb == 0 || size == 0)
+    {
+        return NULL;
+    }
+    size_t buf_size = nmemb * size;
+    /* a good way to check overflow or not */
+    if (nmemb == buf_size / size)
+    {
+        void *ptr = malloc(buf_size);
+        if (ptr != NULL)
+        {
+            memset(ptr, 0, buf_size);
+        }
+        return ptr;
+    }
+    return NULL;
+}
+//--------------------------------------
 // 2.77
 
 // A : K = 17 : x << 4 + x
@@ -441,7 +633,25 @@ int threeforths(int x)
 
 // 2.81
 // A : ~((0x1 << k) - 1)
+int A(int k)
+{
+    return ~((0x1 << k) - 1);
+}
 // B : ((0x1 << k) - 1) << j
+int B(int k, int j)
+{
+    return ((0x1 << k) - 1) << j;
+}
+//-------offer solution
+int offer_A(int k)
+{
+    return -1 << k;
+}
+int offer_B(int k, int j)
+{
+    return ~offer_A(k) << j;
+}
+//--------
 
 // 2.82
 
@@ -463,7 +673,7 @@ float_bits float_denorm_zero(float_bits f)
     /* Reassemble bits */
     return (sign << 31) | (exp << 23) | frac;
 }
-// 2.92
+// 2.92 *
 /* Compute -f. If f is NaN, then return f. */
 float_bits float_negate(float_bits f)
 {
@@ -503,7 +713,7 @@ float_bits float_absval(float_bits f)
     return (sign << 31) | (exp << 23) | frac;
 }
 
-// 2.94
+// 2.94 *
 /* Compute 2*f .If f is NaN, then return f. */
 float_bits float_twice(float_bits f)
 {
@@ -511,8 +721,8 @@ float_bits float_twice(float_bits f)
     unsigned sign = f >> 31;
     unsigned exp = (f >> 23) & 0xFF;
     unsigned frac = f & 0x7FFFFF;
-    /* Check for NaN */
-    if (exp == 0xFF && frac != 0)
+    /* Check for NaN and 00 */
+    if (exp == 0xFF)
     {
         /* Return argument if NaN */
         return f;
@@ -522,6 +732,15 @@ float_bits float_twice(float_bits f)
         /* Denormalized. Shift fraction */
         frac = frac << 1;
     }
+    //-------------------------------------------fixed here---------------------------------------
+    // 忘记考虑到规格化*2后变成00的情况
+    else if (exp == 0xFE)
+    {
+        /* Normalized to NaN or Inf */
+        exp = 0xFF;
+        frac = 0;
+    }
+    //------------------------------------------------------------------------------------------
     else 
     {
         /* Normalized. Increment exponent */
@@ -531,7 +750,7 @@ float_bits float_twice(float_bits f)
     return (sign << 31) | (exp << 23) | frac;
 }
 
-// 2.95
+// 2.95 *
 /* Compute 0.5*f. If f is NaN, then return f. */
 float_bits float_half(float_bits f)
 {
@@ -539,6 +758,16 @@ float_bits float_half(float_bits f)
     unsigned sign = f >> 31;
     unsigned exp = (f >> 23) & 0xFF;
     unsigned frac = f & 0x7FFFFF;
+    unsigned rest = f & 0x7FFFFFFF;
+    /*
+     * round to even, we care about last 2 bits of frac
+     *
+     * 00 => 0 just >>1
+     * 01 => 0 (round to even) just >>1
+     * 10 => 1 just >>1
+     * 11 => 1 + 1 (round to even) just >>1 and plus 1
+     */
+    int addition = (frac & 0x3) == 0x3;
     /* Check for NaN */
     if (exp == 0xFF && frac != 0)
     {
@@ -549,7 +778,21 @@ float_bits float_half(float_bits f)
     {
         /* Denormalized. Shift fraction */
         frac = frac >> 1;
+        frac = frac + addition;
     }
+    //-------------------------------------------fixed here---------------------------------------
+    // 忘记考虑到规格化/2后变成非规格化的情况
+    else if(exp == 1)
+    {
+        /* Normalized to denormalized */
+        // 这就是为什么 IEEE 754 选择 E = 1 - bias 而不是 E = 0 - bias = -127 的原因——为了让规格化和非规格化之间的过渡无缝衔接。
+
+        rest >>= 1;
+        rest += addition;
+        exp = rest >> 23 & 0xFF;
+        frac = rest & 0x7FFFFF;
+    }
+    //------------------------------------------------------------------------------------------
     else 
     {
         /* Normalized. Decrement exponent */
@@ -680,14 +923,208 @@ int offerfloat_f2i(float_bits f)
     return sig ? -num : num;
 }
 
-// 2.97
+// 2.97  *
 /* Compute (float) i */
-float_bits float_i2f(int i)
+/*
+ * Assume i > 0
+ * calculate i's bit length
+ *
+ * e.g.
+ * 0x3 => 2
+ * 0xFF => 8
+ * 0x80 => 8
+ */
+int bits_length(int i)
 {
-    
+    if ((i & INT_MIN) != 0)
+    {
+        return 32;
+    }
+
+    unsigned u = (unsigned)i;
+    int length = 0;
+    while (u >= (1 << length))
+    {
+        length++;
+    }
+    return length;
 }
 
-int main() 
+/*
+ * generate mask
+ * 00000...(32-l) 11111....(l)
+ *
+ * e.g.
+ * 3  => 0x00000007
+ * 16 => 0x0000FFFF
+ */
+unsigned bits_mask(int l)
+{
+    return (unsigned)-1 >> (32 - l);
+}
+
+/*
+ * Compute (float) i
+ */
+float_bits float_i2f(int i)
+{
+    unsigned sig, exp, frac, rest, exp_sig /* except sig */, round_part;
+    unsigned bits, fbits;
+    unsigned bias = 0x7F;
+
+    if (i == 0)
+    {
+        sig = 0;
+        exp = 0;
+        frac = 0;
+        return sig << 31 | exp << 23 | frac;
+    }
+    if (i == INT_MIN)
+    {
+        sig = 1;
+        exp = bias + 31;
+        frac = 0;
+        return sig << 31 | exp << 23 | frac;
+    }
+
+    sig = 0;
+    /* 2's complatation */
+    if (i < 0)
+    {
+        sig = 1;
+        i = -i;
+    }
+
+    bits = bits_length(i);
+    fbits = bits - 1;
+    exp = bias + fbits;
+
+    rest = i & bits_mask(fbits);
+    if (fbits <= 23)
+    {
+        frac = rest << (23 - fbits);
+        exp_sig = exp << 23 | frac;
+    }
+    else
+    {
+        int offset = fbits - 23;
+        int round_mid = 1 << (offset - 1);
+
+        round_part = rest & bits_mask(offset);
+        frac = rest >> offset;
+        exp_sig = exp << 23 | frac;
+
+        /* round to even */
+        if (round_part < round_mid)
+        {
+            /* nothing */
+        }
+        else if (round_part > round_mid)
+        {
+            exp_sig += 1;
+        }
+        else
+        {
+            /* round_part == round_mid */
+            if ((frac & 0x1) == 1)
+            {
+                /* round to even */
+                exp_sig += 1;
+            }
+        }
+    }
+
+    return sig << 31 | exp_sig;
+}
+
+// Compute bits_length
+int my_bits_length(int i)
+{
+    if ((i & INT_MIN) != 0)
+    {
+        return 32;
+    }
+    unsigned u = (unsigned)i;
+    int length = 0;
+    while(u >= (1 << length))
+    {
+        length++;
+    }
+    return length;
+}
+
+unsigned my_bits_mask(int l)
+{
+    return (unsigned)-1 >> (32 - l);
+}
+
+/*
+ * Compute (float) i
+ */
+float_bits my_float_i2f(int i)
+{
+    unsigned sign, exp, frac,exp_sig;
+    unsigned bits, fbits;
+    unsigned bias = 0x7F;
+    if (i == 0)
+    {
+        sign = 0;
+        exp = 0;
+        frac = 0;
+        return sign << 31 | exp << 23 | frac;
+    }
+    if (i == INT_MIN)
+    {
+        sign = 1;
+        exp = bias + 31;
+        frac = 0;
+        return sign << 31 | exp << 23 | frac;
+    }
+
+    sign = 0;
+    if (i < 0)
+    {
+        sign = 1;
+        i = -i;
+    }
+
+    bits = my_bits_length(i);
+    fbits = bits - 1;
+    exp = bias + fbits;
+
+    unsigned rest = i & my_bits_mask(fbits);
+    if (fbits <= 23)
+    {
+        frac = rest << (23 - fbits);
+        exp_sig = exp << 23 | frac;
+    }
+    else
+    {
+        int offset = fbits - 23;
+        int round_mid = 1 << (offset - 1);
+        unsigned round_part = rest & my_bits_mask(offset);
+        frac = rest >> offset;
+        exp_sig = exp << 23 | frac;
+        if (round_part < round_mid)
+        {
+            ;
+        }
+        else if (round_part > round_mid)
+        {
+            exp_sig += 1;
+        }
+        else
+        {
+            if ((frac & 0x1) == 1)
+            {
+                exp_sig += 1;
+            }
+        }
+    }
+    return sign << 31 | exp_sig;
+}
+
+int main()
 {
     printf("\r\nHello, World!\r\n");
     /*
@@ -752,6 +1189,8 @@ int main()
     assert(float_absval(0x7F800001) == 0x7F800001); // NaN
     assert(float_negate(0xBF800000) == (unsigned)0x3F800000); // -1.0 -> 1.0
     assert(float_absval(0xBF800000) == (unsigned)0x3F800000); // -1.0 -> 1.0
+    assert(A(8) == 0xFFFFFF00);
+    assert(B(16, 8) == 0x00FFFF00);
     printf("If you look at is,you have pass!\r\n");
 
     return 0;
