@@ -2,7 +2,17 @@
 
 ## 知识笔记
 
-![知识笔记](/chapter_1/homework/第二章_01.png)
+- [知识笔记](/chapter_1/homework/第二章_01.png)
+
+`(float)int` 的一个思路,使用一个格式B的浮点数来演示：   
+格式B
+- 有一个符号位
+- 有 k = 4 个阶码位。阶位偏置是bias = 2^(k-1)-1 = 7
+- 有 n = 4 个小数位
+
+![手写过程](/chapter_1/homework/8f72e01b383e81959f0e91093dc5b80e_720.jpg)
+
+详细代码见后续`float_bits float_i2f(int i)`
 
 ## 作业笔记
 
@@ -654,7 +664,9 @@ if (round_part == round_mid)  // 恰好在中间
 
 ## 总结：常见问题与技巧
 
-### 输出数据的字节表示
+### 重点代码
+
+- 输出数据的字节表示
 
 ```cpp
 typedef unsigned char *byte_pointer;
@@ -682,7 +694,7 @@ void show_double(double x)
     show_bytes((byte_pointer)&x, sizeof(double));
 }
 ```
-### 生成掩码
+- 生成掩码
 ```c
 /*
  * generate mask
@@ -697,7 +709,7 @@ unsigned bits_mask(int l)
     return (unsigned)-1 >> (32 - l);
 }
 ```
-### 计算`(int) f,(float)i`
+- 计算`(int) f,(float)i`
 
 ```c
 /*
