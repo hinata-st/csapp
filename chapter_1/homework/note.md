@@ -1,4 +1,10 @@
-# CSAPP 第二章习题笔记：
+# CSAPP 第二章笔记：
+
+## 知识笔记
+
+![知识笔记](/chapter_1/homework/第二章_01.png)
+
+## 作业笔记
 
 ## 目录
 - 2.58 is_little_endian
