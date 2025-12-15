@@ -909,6 +909,8 @@ int offerfloat_f2i(float_bits f)
     {
         E = exp - bias;
         M = frac | 0x800000;
+        // 这里的M是23位小数点右移23位后的整数部分
+        // 所以要根据E的大小来决定左移还是右移
         if (E > 23)
         {
             num = M << (E - 23);
