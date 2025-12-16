@@ -15,12 +15,12 @@ void show_bytes(byte_pointer start, size_t len)
 
 int main()
 {
-    int aa = 0x12345678;
+    int aa = ~0x0;
     int a = 1;
     int b = 2;
     printf("\r\n hello,world!\r\n");
     show_bytes((byte_pointer)&aa, sizeof(int));
     b = (1 & (a = 2)) | (0 & (a = 3));
-    printf("a = %d, b = %d\r\n", a, b);
+    printf("aa = %d, b = %d, c = %d\r\n", !((~(INT_MAX) + ~(0x0)) ^ INT_MAX), ~(INT_MIN), ~(0x0));
     return 0;
 }
