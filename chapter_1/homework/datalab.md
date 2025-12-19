@@ -131,3 +131,55 @@ int isLessOrEqual(int x, int y) {
   return sig;
 }
 ```
+
+### logicalNeg(x)
+思路：0 和 0的负数(~x+1)的符号位都是0,以此来判断x是不是0,因为is_zero为0时要返回1，1要返回0(不能使用!)，使用(is_zero + 1) & 1来实现
+```c
+/* 
+ * logicalNeg - implement the ! operator, using all of 
+ *              the legal operators except !
+ *   Examples: logicalNeg(3) = 0, logicalNeg(0) = 1
+ *   Legal ops: ~ & ^ | + << >>
+ *   Max ops: 12
+ *   Rating: 4 
+ */
+int logicalNeg(int x) {
+  int neg_x = ~x + 1;
+  int is_zero = (neg_x >> 31) | (x >> 31); // 0 if x is 0
+  return (is_zero + 1) & 1;
+}
+```
+### howManyBits(x)
+思路：先把负数转成正数，这里取反后不加1，为了```转换前后需要的字节数一样```,e.g.(-8) = 4,(7) = 4,(8) = 5,然后采用二分法逐步判断字节数。利用```(!!(neg_x >> 16))```来判断是否加以及是否位移。
+```c
+/* howManyBits - return the minimum number of bits required to represent x in
+ *             two's complement
+ *  Examples: howManyBits(12) = 5
+ *            howManyBits(298) = 10
+ *            howManyBits(-5) = 4
+ *            howManyBits(0)  = 1
+ *            howManyBits(-1) = 1
+ *            howManyBits(0x80000000) = 32
+ *  Legal ops: ! ~ & ^ | + << >>
+ *  Max ops: 90
+ *  Rating: 4
+ */
+int howManyBits(int x) {
+  int sign = x >> 31;
+  int neg_x = x ^ sign; // if x < 0, ~x; else x
+  int bits = 1; // start with sign bit
+  // check each half
+  bits += ((!!(neg_x >> 16)) << 4);
+  neg_x = neg_x >> ((!!(neg_x >> 16)) << 4);
+  bits += ((!!(neg_x >> 8)) << 3);
+  neg_x = neg_x >> ((!!(neg_x >> 8)) << 3);
+  bits += ((!!(neg_x >> 4)) << 2);
+  neg_x = neg_x >> ((!!(neg_x >> 4)) << 2);
+  bits += ((!!(neg_x >> 2)) << 1);
+  neg_x = neg_x >> ((!!(neg_x >> 2)) << 1);
+  bits += (!!(neg_x >> 1));
+  neg_x = neg_x >> (!!(neg_x >> 1));
+  bits += neg_x;
+  return bits;
+}
+```
