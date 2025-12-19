@@ -150,7 +150,7 @@ int logicalNeg(int x) {
 }
 ```
 ### howManyBits(x)
-思路：先把负数转成正数，这里取反后不加1，为了```转换前后需要的字节数一样```,e.g.(-8) = 4,(7) = 4,(8) = 5,然后采用二分法逐步判断字节数。利用```(!!(neg_x >> 16))```来判断是否加以及是否位移。
+思路：先把负数转成正数，这里取反后不加1，为了```转换前后需要的字节数一样(处理补码表示范围的不对称性)```,e.g.(-8) = 4,(7) = 4,(8) = 5,然后采用二分法逐步判断字节数。利用```(!!(neg_x >> 16))```来判断是否加以及是否位移。
 ```c
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
@@ -182,4 +182,183 @@ int howManyBits(int x) {
   bits += neg_x;
   return bits;
 }
+```
+
+### floatScale2(uf)
+思路：先把sign,exp,frac分别提取出来，注意一下特殊值的处理即可，这里非规格值*2后变成规格值不用特殊处理，因为frac左移一位后变成非规格值中隐含的1了。
+```c
+/* 
+ * floatScale2 - Return bit-level equivalent of expression 2*f for
+ *   floating point argument f.
+ *   Both the argument and result are passed as unsigned int's, but
+ *   they are to be interpreted as the bit-level representation of
+ *   single-precision floating point values.
+ *   When argument is NaN, return argument
+ *   Legal ops: Any integer/unsigned operations incl. ||, &&. also if, while
+ *   Max ops: 30
+ *   Rating: 4
+ */
+unsigned floatScale2(unsigned uf) {
+  unsigned sign = uf >> 31;
+  unsigned exp = (uf >> 23) & 0xFF;
+  unsigned frac = uf & 0x7FFFFF;
+  /* Check for NaN and 00*/
+  if (exp == 0xFF)
+  {
+    return uf;
+  }
+  if (exp == 0 && frac != 0)
+  {
+    frac = frac << 1;
+  }
+  else if(exp == 0 && frac == 0)
+  {
+    ;
+  }
+  else if(exp == 0xFE)
+  {
+    exp = 0xFF;
+    frac = 0;
+  }
+  else
+  {
+    exp = exp + 1;
+  }
+  return (sign << 31) | (exp << 23) | frac;
+}
+```
+
+### floatFloat2Int(uf)
+思路：依旧是sign,exp,frac各部分分开，注意处理特殊情况，注意的地方是**M手动加上隐含的1，然后这里的M是原理中M(1.M,M是小数点右边的23位)左移23位后的结果，所以这里位移时得减去或加上这23位**。
+```c
+/* 
+ * floatFloat2Int - Return bit-level equivalent of expression (int) f
+ *   for floating point argument f.
+ *   Argument is passed as unsigned int, but
+ *   it is to be interpreted as the bit-level representation of a
+ *   single-precision floating point value.
+ *   Anything out of range (including NaN and infinity) should return
+ *   0x80000000u.
+ *   Legal ops: Any integer/unsigned operations incl. ||, &&. also if, while
+ *   Max ops: 30
+ *   Rating: 4
+ */
+int floatFloat2Int(unsigned uf) {
+  unsigned sign = uf >> 31;
+  unsigned exp = (uf >>23) & 0xFF;
+  unsigned frac = uf & 0x7FFFFF;
+  int E = exp - 127;
+  unsigned M;
+  int val;
+  /* Check for NaN and infinity*/
+  if (exp == 0xFF)
+  {
+    return 0x80000000;
+  }
+  /* Denormalized */
+  if (exp == 0)
+  {
+    M = frac;
+    E = -126;
+  }
+  else
+  {
+    // add implicit leading 1
+    M = frac | 0x800000;
+  }
+  /* Handle cases*/
+  if (E < 0)
+  {
+    /* Absolute value less than 1 */
+    val = 0;
+  }
+  else if (E > 31)
+  {
+    /* Overflow*/
+    val = 0x80000000;
+  }
+  else if (E > 23)
+  {
+    val = M << (E - 23);
+  }
+  else
+  {
+    val = M >> (23 - E);
+  }
+  /* Apply sign */
+  if (sign)
+  {
+    val = -val;
+  }
+  return val;
+}
+```
+
+### floatPower2(x)
+思路：先处理边界情况，too large,too small,denormalized,normalized  
+通过原理表达式```(V = (-1)^s * 1.M * 2^(E) = 2^x)```来求解frac和exp的值   
+注意在规格化下，由于2^x = 1.0*2^x，意味着尾数部分 = 1.000...000,隐含的1已经提供，所以frac = 0。
+```c
+/* 
+ * floatPower2 - Return bit-level equivalent of the expression 2.0^x
+ *   (2.0 raised to the power x) for any 32-bit integer x.
+ *
+ *   The unsigned value that is returned should have the identical bit
+ *   representation as the single-precision floating-point number 2.0^x.
+ *   If the result is too small to be represented as a denorm, return
+ *   0. If too large, return +INF.
+ * 
+ *   Legal ops: Any integer/unsigned operations incl. ||, &&. Also if, while 
+ *   Max ops: 30 
+ *   Rating: 4
+ */
+unsigned floatPower2(int x) {
+  unsigned frac = 0,exp = 0;
+  // too large
+  if (x >= 128)
+  {
+    exp = 0xFF;
+    frac = 0;
+  }
+  // too small
+  else if (x < -149)
+  {
+    exp = 0;
+    frac = 0;
+  }
+  // Denormalized
+  else if (x < -126 )
+  {
+    exp = 0;
+    // v = f/2^n * 2^-126 =f * 2 ^ (-126 -n) = 2 ^ x -> f = 2 ^ (x + 126 + n)
+    frac = 1 << (x + 126 + 23);
+  }
+  // Normalized
+  else
+  {
+    frac = 0;
+    exp = 127 + x;
+  }
+  return (exp << 23) | frac;
+}
+```
+
+### finish datalab!!!
+```
+root@LAPTOP-0PTH5R3A:/home/emilia/emilia/csapplab/datalab/datalab-handout# ./btest
+Score   Rating  Errors  Function
+ 1      1       0       bitXor
+ 1      1       0       tmin
+ 1      1       0       isTmax
+ 2      2       0       allOddBits
+ 2      2       0       negate
+ 3      3       0       isAsciiDigit
+ 3      3       0       conditional
+ 3      3       0       isLessOrEqual
+ 4      4       0       logicalNeg
+ 4      4       0       howManyBits
+ 4      4       0       floatScale2
+ 4      4       0       floatFloat2Int
+ 4      4       0       floatPower2
+Total points: 36/36
 ```
