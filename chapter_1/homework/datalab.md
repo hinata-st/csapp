@@ -1,4 +1,8 @@
 ### bitXor(x,y)
+a^b=
+- (a|b)&(~a|~b)
+- ~(~a&~b)&~(a&b)
+- (a&~b)|(~a&b)
 ```c
 /* 
  * bitXor - x^y using only ~ and & 
@@ -29,7 +33,8 @@ int tmin(void) {
 }
 ```
 ### isTmax(x)
-思路就是(Tmax + 1)^(Tmax) = -1(用~0来表示)，同时-1也满足上诉式子，所以需要剔除-1的情况(-1 + 1) = 0,使用!!号把结果输出为1,0两种情况，此时&就起到了&&的作用
+思路就是(Tmax + 1)^(Tmax) = -1(用~0来表示)，同时-1也满足上诉式子，所以需要剔除-1的情况(-1 + 1) = 0,使用!!号把结果输出为1,0两种情况，此时&就起到了&&的作用   
+改进：```!((x + 1)^(x)^(~0)) -> !((~(x+1)^x))```最大值加一取非会变成原来的值
 ```c
 /*
  * isTmax - returns 1 if x is the maximum, two's complement number,
@@ -133,7 +138,8 @@ int isLessOrEqual(int x, int y) {
 ```
 
 ### logicalNeg(x)
-思路：0 和 0的负数(~x+1)的符号位都是0,以此来判断x是不是0,因为is_zero为0时要返回1，1要返回0(不能使用!)，使用(is_zero + 1) & 1来实现
+思路：0 和 0的负数(~x+1)的符号位都是0,以此来判断x是不是0,因为is_zero为0时要返回1，1要返回0(不能使用!)，使用(is_zero + 1) & 1来实现   
+另一种思路:```return ((x | (~x +1)) >> 31) + 1;```
 ```c
 /* 
  * logicalNeg - implement the ! operator, using all of 
