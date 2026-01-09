@@ -2,7 +2,7 @@
 
 ## 知识笔记
 
-- [知识笔记](/chapter_1/homework/第二章_01.png)
+- [知识笔记](/chapter_1/homework/第二章(1)_01.png)
 
 `(float)int` 的一个思路,使用一个格式B的浮点数来演示：   
 格式B
