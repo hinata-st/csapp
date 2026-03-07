@@ -8,8 +8,10 @@
                 "-fdiagnostics-color=always",
                 "-g",
                 "${file}",
+                //"*.c",//当前文件夹下所有的.cpp文件都编译
                 "-o",
-                "${fileDirname}\\${fileBasenameNoExtension}.exe"
+                //"${fileDirname}\\${fileBasenameNoExtension}.exe"
+                "${fileDirname}\\my.exe"
             ],
             "options": {
                 "cwd": "${fileDirname}"

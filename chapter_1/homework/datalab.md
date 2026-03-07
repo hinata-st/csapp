@@ -128,7 +128,7 @@ int conditional(int x, int y, int z) {
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) {
-  int sig = ((y + (~x + 1)) >> 31) & 1; // sign of y - x,1 : x <= y
+  int sig = ((y + (~x + 1)) >> 31) & 1; // sign of y - x,0 : x <= y
   int x_sign = (x >> 31) & 1;
   int y_sign = (y >> 31) & 1;
   int sign_diff = x_sign ^ y_sign;
