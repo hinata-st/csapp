@@ -4,10 +4,12 @@
 
 ## 第2章 程序结构与执行
 
-- [练习笔记](/chapter_1/homework/note.md)
+- [笔记](/chapter_1/homework/note.md)
 - [datalab 笔记](/chapter_1/homework/datalab.md)
 
 ## 第3章 程序的机器级表示
+
+- [笔记](/chapter_2/note/chapter3(1)_01.png)
 
 ## 第7章 链接
 
