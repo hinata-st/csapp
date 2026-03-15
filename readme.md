@@ -23,3 +23,7 @@
 
 ## 第12章 并发编程
 
+### 家庭作业参考答案
+
+- https://dreamanddead.github.io/CSAPP-3e-Solutions/
+
