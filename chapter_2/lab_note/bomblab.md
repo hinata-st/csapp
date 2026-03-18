@@ -212,4 +212,95 @@ That's number 2.  Keep going!
 可以发现phase_2成功解除了。
 
 ## phase 3
+先大概看一下总的汇编代码，然后逐一分析
+```
+0000000000400f43 <phase_3>:
+  400f43:	48 83 ec 18          	sub    $0x18,%rsp
+  400f47:	48 8d 4c 24 0c       	lea    0xc(%rsp),%rcx
+  400f4c:	48 8d 54 24 08       	lea    0x8(%rsp),%rdx
+  400f51:	be cf 25 40 00       	mov    $0x4025cf,%esi
+  400f56:	b8 00 00 00 00       	mov    $0x0,%eax
+  400f5b:	e8 90 fc ff ff       	callq  400bf0 <__isoc99_sscanf@plt>
+  400f60:	83 f8 01             	cmp    $0x1,%eax
+  400f63:	7f 05                	jg     400f6a <phase_3+0x27>
+  400f65:	e8 d0 04 00 00       	callq  40143a <explode_bomb>
+  400f6a:	83 7c 24 08 07       	cmpl   $0x7,0x8(%rsp)
+  400f6f:	77 3c                	ja     400fad <phase_3+0x6a>
+  400f71:	8b 44 24 08          	mov    0x8(%rsp),%eax
+  400f75:	ff 24 c5 70 24 40 00 	jmpq   *0x402470(,%rax,8)
+  400f7c:	b8 cf 00 00 00       	mov    $0xcf,%eax
+  400f81:	eb 3b                	jmp    400fbe <phase_3+0x7b>
+  400f83:	b8 c3 02 00 00       	mov    $0x2c3,%eax
+  400f88:	eb 34                	jmp    400fbe <phase_3+0x7b>
+  400f8a:	b8 00 01 00 00       	mov    $0x100,%eax
+  400f8f:	eb 2d                	jmp    400fbe <phase_3+0x7b>
+  400f91:	b8 85 01 00 00       	mov    $0x185,%eax
+  400f96:	eb 26                	jmp    400fbe <phase_3+0x7b>
+  400f98:	b8 ce 00 00 00       	mov    $0xce,%eax
+  400f9d:	eb 1f                	jmp    400fbe <phase_3+0x7b>
+  400f9f:	b8 aa 02 00 00       	mov    $0x2aa,%eax
+  400fa4:	eb 18                	jmp    400fbe <phase_3+0x7b>
+  400fa6:	b8 47 01 00 00       	mov    $0x147,%eax
+  400fab:	eb 11                	jmp    400fbe <phase_3+0x7b>
+  400fad:	e8 88 04 00 00       	callq  40143a <explode_bomb>
+  400fb2:	b8 00 00 00 00       	mov    $0x0,%eax
+  400fb7:	eb 05                	jmp    400fbe <phase_3+0x7b>
+  400fb9:	b8 37 01 00 00       	mov    $0x137,%eax
+  400fbe:	3b 44 24 0c          	cmp    0xc(%rsp),%eax
+  400fc2:	74 05                	je     400fc9 <phase_3+0x86>
+  400fc4:	e8 71 04 00 00       	callq  40143a <explode_bomb>
+  400fc9:	48 83 c4 18          	add    $0x18,%rsp
+  400fcd:	c3                   	retq   
+```
+看到0x400f51和0x400f5b行，调用了sscanf函数，调试一下看看输入的格式是什么
+```
+(gdb) x/s $rsi
+0x4025cf:       "%d %d"
+(gdb) x/s $rdi
+0x603820 <input_strings+160>:   "hello world"
+(gdb) 
+```
+可以看到要求是输入两个整数   
+尝试输入两个数字1 9
+```
+(gdb) x/16gx $rsp
+0x7fffffffd6f0: 0x0000000000402210      0x0000000900000001
+0x7fffffffd700: 0x0000000000000000      0x0000000000400e77
+0x7fffffffd710: 0x0000000000402210      0x00007ffff7dee083
+0x7fffffffd720: 0x0000000000000050      0x00007fffffffd808
+0x7fffffffd730: 0x00000001f7fb27a0      0x0000000000400da0
+0x7fffffffd740: 0x0000000000402210      0x6a63719956b9e925
+0x7fffffffd750: 0x0000000000400c90      0x00007fffffffd800
+0x7fffffffd760: 0x0000000000000000      0x0000000000000000
+```
+可以看到输入的数字被存储在了$rsp + 8,$rsp + 12的位置
+
+看到``jmpq   *0x402470(,%rax,8)``
+设计了一个switch跳转表，通过调试看到跳转表
+```
+(gdb) x/8gx 0x402470
+0x402470:       0x0000000000400f7c      0x0000000000400fb9
+0x402480:       0x0000000000400f83      0x0000000000400f8a
+0x402490:       0x0000000000400f91      0x0000000000400f98
+0x4024a0:       0x0000000000400f9f      0x0000000000400fa6
+```
+假设第一个数输入0，跳转到0x0000000000400f7c的位置，通过汇编代码可以看出，第二个输入的数字与分支赋值的值一样即可通过。及第二个输入的数字为207，尝试输入
+```
+(gdb) run
+Starting program: /home/emilia/emilia/csapplab/bomblab/bomb/bomb 
+Welcome to my fiendish little bomb. You have 6 phases with
+which to blow yourself up. Have a nice day!
+Border relations with Canada have never been better.
+Phase 1 defused. How about the next one?
+1 2 4 8 16 32
+That's number 2.  Keep going!
+0 207
+Halfway there!
+```
+可见phase_3已通过，应该有7组答案，``0 207只是其中一组``
+
+## phase 4
+
+
+
 
