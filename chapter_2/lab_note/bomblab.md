@@ -95,7 +95,27 @@ The bomb has blown up.
 [Inferior 1 (process 14382) exited with code 010]
 ```
 可以发现第一个phase解除了。
-虽然解决了phase_1，但是我们来看看phase_1的strings_not_equal的汇编实现,怎么实现两个字符串的比较。
+虽然解决了phase_1，但是我们来看看phase_1的strings_length的汇编实现,怎么实现计算字符串长度的计算。
+
+```
+000000000040131b <string_length>:
+  40131b:	80 3f 00             	cmpb   $0x0,(%rdi)
+  40131e:	74 12                	je     401332 <string_length+0x17>
+  401320:	48 89 fa             	mov    %rdi,%rdx
+  401323:	48 83 c2 01          	add    $0x1,%rdx
+  401327:	89 d0                	mov    %edx,%eax
+  401329:	29 f8                	sub    %edi,%eax
+  40132b:	80 3a 00             	cmpb   $0x0,(%rdx)
+  40132e:	75 f3                	jne    401323 <string_length+0x8>
+  401330:	f3 c3                	repz retq 
+  401332:	b8 00 00 00 00       	mov    $0x0,%eax
+  401337:	c3                   	retq 
+```
+等价c代码
+- 若s[0] == 0,返回0
+- 否则从s开始递增指针p,直到*p==0
+- 返回p - s
+
 
 ## phase 2
 ```c
