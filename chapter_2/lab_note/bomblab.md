@@ -12,6 +12,11 @@
 | `info breakpoints` | 查看所有断点 |
 | `delete <breakpoint_number>` | 删除指定断点 |
 | `x/s $rdi` | 查看 `rdi` 寄存器中的字符串 |
+| `x/s 0x4025cf` | 把地址0x4025cf处的字符串显示出来 |
+| `p/c 0x41`|把0x41解释为字符|
+| `p/s 0x4025cf`|把地址0x4025cf处的字符串解释为字符串|
+| `p/d 0xef`|把0xef解释为十进制数|
+| `p/d $rdi`|查看 `rdi` 寄存器中的十进制值|
 | `si` | 单步执行，进入函数 |
 | `ni` | 单步执行，不进入函数 |
 | `info frame` | 查看当前栈帧信息 |
@@ -114,7 +119,7 @@ The bomb has blown up.
 可以发现第一个phase解除了。
 虽然解决了phase_1，但是我们来看看phase_1的strings_length的汇编实现,怎么实现计算字符串长度的计算。
 
-```
+```assembly
 000000000040131b <string_length>:
   40131b:	80 3f 00             	cmpb   $0x0,(%rdi)
   40131e:	74 12                	je     401332 <string_length+0x17>
@@ -213,7 +218,7 @@ That's number 2.  Keep going!
 
 ## phase 3
 先大概看一下总的汇编代码，然后逐一分析
-```
+```assembly
 0000000000400f43 <phase_3>:
   400f43:	48 83 ec 18          	sub    $0x18,%rsp
   400f47:	48 8d 4c 24 0c       	lea    0xc(%rsp),%rcx
@@ -300,6 +305,126 @@ Halfway there!
 可见phase_3已通过，应该有7组答案，``0 207只是其中一组``
 
 ## phase 4
+我们先来看汇编代码
+```assembly
+000000000040100c <phase_4>:
+  40100c:	48 83 ec 18          	sub    $0x18,%rsp
+  401010:	48 8d 4c 24 0c       	lea    0xc(%rsp),%rcx
+  401015:	48 8d 54 24 08       	lea    0x8(%rsp),%rdx
+  40101a:	be cf 25 40 00       	mov    $0x4025cf,%esi
+  40101f:	b8 00 00 00 00       	mov    $0x0,%eax
+  401024:	e8 c7 fb ff ff       	callq  400bf0 <__isoc99_sscanf@plt>
+  401029:	83 f8 02             	cmp    $0x2,%eax
+  40102c:	75 07                	jne    401035 <phase_4+0x29>
+  40102e:	83 7c 24 08 0e       	cmpl   $0xe,0x8(%rsp)
+  401033:	76 05                	jbe    40103a <phase_4+0x2e>
+  401035:	e8 00 04 00 00       	callq  40143a <explode_bomb>
+  40103a:	ba 0e 00 00 00       	mov    $0xe,%edx
+  40103f:	be 00 00 00 00       	mov    $0x0,%esi
+  401044:	8b 7c 24 08          	mov    0x8(%rsp),%edi
+  401048:	e8 81 ff ff ff       	callq  400fce <func4>
+  40104d:	85 c0                	test   %eax,%eax
+  40104f:	75 07                	jne    401058 <phase_4+0x4c>
+  401051:	83 7c 24 0c 00       	cmpl   $0x0,0xc(%rsp)
+  401056:	74 05                	je     40105d <phase_4+0x51>
+  401058:	e8 dd 03 00 00       	callq  40143a <explode_bomb>
+  40105d:	48 83 c4 18          	add    $0x18,%rsp
+  401061:	c3                   	retq
+```
+看到又有sscanf函数，调试一下看看输入的格式是什么
+```
+(gdb) x/s $rsi   
+0x4025cf:       "%d %d"
+```
+可以看到要求输入两个整数，输入一个测试一下0,10,看看被放置在栈上的什么位置
+```
+(gdb) x/16gx $rsp
+0x7fffffffd6f0: 0x0000000000402210      0x0000000a00000000
+0x7fffffffd700: 0x0000000000000000      0x0000000000400e93
+0x7fffffffd710: 0x0000000000402210      0x00007ffff7dee083
+0x7fffffffd720: 0x0000000000000050      0x00007fffffffd808
+0x7fffffffd730: 0x00000001f7fb27a0      0x0000000000400da0
+0x7fffffffd740: 0x0000000000402210      0xed4eab77e63b349c
+0x7fffffffd750: 0x0000000000400c90      0x00007fffffffd800
+0x7fffffffd760: 0x0000000000000000      0x0000000000000000
+```
+可以看到输入的数字被存储在了$rsp + 8,$rsp + 12的位置  
+继续分析汇编代码
+```assembly
+  40102e:	83 7c 24 08 0e       	cmpl   $0xe,0x8(%rsp)
+  401033:	76 05                	jbe    40103a <phase_4+0x2e>
+  401035:	e8 00 04 00 00       	callq  40143a <explode_bomb>
+```
+可以看到输入的第一个数字必须小于等于14，否则炸弹爆炸
+```assembly
+  40103a:	ba 0e 00 00 00       	mov    $0xe,%edx
+  40103f:	be 00 00 00 00       	mov    $0x0,%esi
+  401044:	8b 7c 24 08          	mov    0x8(%rsp),%edi
+  401048:	e8 81 ff ff ff       	callq  400fce <func4>
+```
+可以看到输入的第一个数字被传递给了func4函数，第二个参数为0，第三个参数为14     
+继续分析func4函数的汇编代码
+```assembly
+0000000000400fce <func4>:
+  400fce:	48 83 ec 08          	sub    $0x8,%rsp
+  400fd2:	89 d0                	mov    %edx,%eax
+  400fd4:	29 f0                	sub    %esi,%eax
+  400fd6:	89 c1                	mov    %eax,%ecx
+  400fd8:	c1 e9 1f             	shr    $0x1f,%ecx
+  400fdb:	01 c8                	add    %ecx,%eax
+  400fdd:	d1 f8                	sar    %eax
+  400fdf:	8d 0c 30             	lea    (%rax,%rsi,1),%ecx
+  400fe2:	39 f9                	cmp    %edi,%ecx
+  400fe4:	7e 0c                	jle    400ff2 <func4+0x24>
+  400fe6:	8d 51 ff             	lea    -0x1(%rcx),%edx
+  400fe9:	e8 e0 ff ff ff       	callq  400fce <func4>
+  400fee:	01 c0                	add    %eax,%eax
+  400ff0:	eb 15                	jmp    401007 <func4+0x39>
+  400ff2:	b8 00 00 00 00       	mov    $0x0,%eax
+  400ff7:	39 f9                	cmp    %edi,%ecx
+  400ff9:	7d 0c                	jge    401007 <func4+0x39>
+  400ffb:	8d 71 01             	lea    0x1(%rcx),%esi
+  400ffe:	e8 cb ff ff ff       	callq  400fce <func4>
+  401003:	8d 44 00 01          	lea    0x1(%rax,%rax,1),%eax
+  401007:	48 83 c4 08          	add    $0x8,%rsp
+  40100b:	c3                   	retq 
+```
+看到400fe2,推测此时的$eax的值为7,$ecx的值也为7,打个断点看看是否正确
+```
+(gdb) p/d $ecx
+$10 = 7
+(gdb) p/d $eax
+$11 = 7
+```
+看到猜测正确，继续往下看，可以发现当输入的第一个数字等于7时，函数返回0,当输入的第一个数字大于7时，函数返回2*func4(输入的第一个数字-1)，当输入的第一个数字小于7时，函数返回2*func4(输入的第一个数字+1)+1,回看phase_4的汇编代码
+```assembly
+  40104d:	85 c0                	test   %eax,%eax
+  40104f:	75 07                	jne    401058 <phase_4+0x4c>
+  401051:	83 7c 24 0c 00       	cmpl   $0x0,0xc(%rsp)
+  401056:	74 05                	je     40105d <phase_4+0x51>
+```
+输入的第二个数字必须为0，否则炸弹爆炸，所以答案为``7 0``
+```
+(gdb) run
+Starting program: /home/emilia/emilia/csapplab/bomblab/bomb/bomb 
+Welcome to my fiendish little bomb. You have 6 phases with
+which to blow yourself up. Have a nice day!
+Border relations with Canada have never been better.
+Phase 1 defused. How about the next one?
+1 2 4 8 16 32
+That's number 2.  Keep going!
+0 207
+Halfway there!
+7 0
+So you got that one.  Try this one.
+```
+可以看到phase_4成功解除了.
+
+## phase 5
+
+
+
+
 
 
 
