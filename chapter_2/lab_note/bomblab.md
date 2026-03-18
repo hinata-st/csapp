@@ -2,6 +2,23 @@
 
 首先打开bomb.c文件,可以看到6个phase,对应6个解除炸弹的地方，我们先看第一个phase
 
+由于需要用到gdb调试器，下面给出常用的gdb指令
+| 指令 | 说明 |
+| --- | --- |
+| `run` | 运行程序,到第一个断点 |
+| `continue` | 继续运行，直到下一个断点 |
+| `break <function_name>` | 在函数入口处设置断点 |
+| `break *0x400ee9` | 在指定地址设置断点 |
+| `info breakpoints` | 查看所有断点 |
+| `delete <breakpoint_number>` | 删除指定断点 |
+| `x/s $rdi` | 查看 `rdi` 寄存器中的字符串 |
+| `si` | 单步执行，进入函数 |
+| `ni` | 单步执行，不进入函数 |
+| `info frame` | 查看当前栈帧信息 |
+| `print $rdi` | 查看 `rdi` 寄存器中的值 |
+| `info registers` | 查看所有寄存器信息 |
+| `x/16gx $rsp` | 查看 `rsp` 寄存器中的值（16: 看16个单元，g: 每个单元是8字节，x: 十六进制） |
+
 ## phase 1
 ```c
 /* Hmm...  Six phases must be more secure than one phase! */
@@ -119,3 +136,80 @@ The bomb has blown up.
 
 ## phase 2
 ```c
+/* The second phase is harder.  No one will ever figure out
+  * how to defuse this... */
+input = read_line();
+phase_2(input);
+phase_defused();
+printf("That's number 2.  Keep going!\n");
+```
+我们同样打开bomb.s文件找到phase_2函数的汇编代码
+```assembly
+0000000000400efc <phase_2>:
+  400efc:	55                   	push   %rbp
+  400efd:	53                   	push   %rbx
+  400efe:	48 83 ec 28          	sub    $0x28,%rsp
+  400f02:	48 89 e6             	mov    %rsp,%rsi
+  400f05:	e8 52 05 00 00       	callq  40145c <read_six_numbers>
+  400f0a:	83 3c 24 01          	cmpl   $0x1,(%rsp)
+  400f0e:	74 20                	je     400f30 <phase_2+0x34>
+  400f10:	e8 25 05 00 00       	callq  40143a <explode_bomb>
+  400f15:	eb 19                	jmp    400f30 <phase_2+0x34>
+  400f17:	8b 43 fc             	mov    -0x4(%rbx),%eax
+  400f1a:	01 c0                	add    %eax,%eax
+  400f1c:	39 03                	cmp    %eax,(%rbx)
+  400f1e:	74 05                	je     400f25 <phase_2+0x29>
+  400f20:	e8 15 05 00 00       	callq  40143a <explode_bomb>
+  400f25:	48 83 c3 04          	add    $0x4,%rbx
+  400f29:	48 39 eb             	cmp    %rbp,%rbx
+  400f2c:	75 e9                	jne    400f17 <phase_2+0x1b>
+  400f2e:	eb 0c                	jmp    400f3c <phase_2+0x40>
+  400f30:	48 8d 5c 24 04       	lea    0x4(%rsp),%rbx
+  400f35:	48 8d 6c 24 18       	lea    0x18(%rsp),%rbp
+  400f3a:	eb db                	jmp    400f17 <phase_2+0x1b>
+  400f3c:	48 83 c4 28          	add    $0x28,%rsp
+  400f40:	5b                   	pop    %rbx
+  400f41:	5d                   	pop    %rbp
+  400f42:	c3                   	retq  
+```
+通过gdb调试发现,我们输入的6个整数分别存储在%rsp+0x4,%rsp+0x8,%rsp+0xc,%rsp+0x10,%rsp+0x14,%rsp+0x18
+```
+(gdb) x/16gx $rsp
+0x7fffffffd6a0: 0x0000000200000001      0x0000000400000003
+0x7fffffffd6b0: 0x0000000600000005      0x0000000000401431
+0x7fffffffd6c0: 0x0000000000402210      0x0000000000402210
+0x7fffffffd6d0: 0x0000000000000000      0x0000000000400e5b
+0x7fffffffd6e0: 0x0000000000402210      0x00007ffff7dee083
+0x7fffffffd6f0: 0x0000000000000050      0x00007fffffffd7d8
+0x7fffffffd700: 0x00000001f7fb27a0      0x0000000000400da0
+0x7fffffffd710: 0x0000000000402210      0x0bbbffe1e0e91c59
+```
+
+
+通过阅读汇编代码，可以发现等价与下面c代码
+```c
+int number[6];//输入的6个整数
+int cnt = 0;
+if(number[cnt] != 1)
+    explode_bomb();
+for(int i = 0; i < 6; i++){
+    cnt++;
+    if(number[cnt] != 2 * number[i])
+        explode_bomb();
+}
+```
+可以发现输入的第一个数字必须是1，而且后面的每个数字必须是前面一个数字的两倍，可以得到phase_2要求输入的6个数字为``1 2 4 8 16 32``
+```
+(gdb) run
+Starting program: /home/emilia/emilia/csapplab/bomblab/bomb/bomb 
+Welcome to my fiendish little bomb. You have 6 phases with
+which to blow yourself up. Have a nice day!
+Border relations with Canada have never been better.
+Phase 1 defused. How about the next one?
+1 2 4 8 16 32
+That's number 2.  Keep going!
+```
+可以发现phase_2成功解除了。
+
+## phase 3
+
