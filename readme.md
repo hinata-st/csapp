@@ -5,11 +5,11 @@
 ## 第2章 程序结构与执行
 - [笔记](/chapter_2/homework/第二章(1)_01.png)
 - [homework 笔记](/chapter_2/homework/homework.md)
-- [datalab 笔记](/chapter_3/homework/datalab.md)
+- [datalab 笔记](/chapter_2/homework/datalab.md)
 
 ## 第3章 程序的机器级表示
-- [笔记](/chapter_2/note/chapter3(1)_01.png)
-- [bomblab 笔记](/chapter_3/homework/bomblab.md)
+- [笔记](/chapter_3/note/chapter3(1)_01.png)
+- [bomblab 笔记](/chapter_3/lab_note/bomblab.md)
 
 ## 第7章 链接
 
