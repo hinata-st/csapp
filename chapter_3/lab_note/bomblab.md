@@ -518,6 +518,231 @@ Good work!  On to the next...
 
 ## phase 6
 
+终于到最后一个phase了   
+``This phase will never be used, since no one will get past the earlier ones. But just in case, make this one extra hard.``
+
+看到phase_6的汇编代码，非常长，我们来逐一分析
+
+```assembly
+00000000004010f4 <phase_6>:
+  4010f4:	41 56                	push   %r14
+  4010f6:	41 55                	push   %r13
+  4010f8:	41 54                	push   %r12
+  4010fa:	55                   	push   %rbp
+  4010fb:	53                   	push   %rbx
+  4010fc:	48 83 ec 50          	sub    $0x50,%rsp
+  401100:	49 89 e5             	mov    %rsp,%r13
+  401103:	48 89 e6             	mov    %rsp,%rsi
+  401106:	e8 51 03 00 00       	callq  40145c <read_six_numbers>
+  40110b:	49 89 e6             	mov    %rsp,%r14
+  40110e:	41 bc 00 00 00 00    	mov    $0x0,%r12d
+  401114:	4c 89 ed             	mov    %r13,%rbp
+  401117:	41 8b 45 00          	mov    0x0(%r13),%eax
+  40111b:	83 e8 01             	sub    $0x1,%eax
+  40111e:	83 f8 05             	cmp    $0x5,%eax
+  401121:	76 05                	jbe    401128 <phase_6+0x34>
+  401123:	e8 12 03 00 00       	callq  40143a <explode_bomb>
+  401128:	41 83 c4 01          	add    $0x1,%r12d
+  40112c:	41 83 fc 06          	cmp    $0x6,%r12d
+  401130:	74 21                	je     401153 <phase_6+0x5f>
+  401132:	44 89 e3             	mov    %r12d,%ebx
+  401135:	48 63 c3             	movslq %ebx,%rax
+  401138:	8b 04 84             	mov    (%rsp,%rax,4),%eax
+  40113b:	39 45 00             	cmp    %eax,0x0(%rbp)
+  40113e:	75 05                	jne    401145 <phase_6+0x51>
+  401140:	e8 f5 02 00 00       	callq  40143a <explode_bomb>
+  401145:	83 c3 01             	add    $0x1,%ebx
+  401148:	83 fb 05             	cmp    $0x5,%ebx
+  40114b:	7e e8                	jle    401135 <phase_6+0x41>
+  40114d:	49 83 c5 04          	add    $0x4,%r13
+  401151:	eb c1                	jmp    401114 <phase_6+0x20>
+  401153:	48 8d 74 24 18       	lea    0x18(%rsp),%rsi
+  401158:	4c 89 f0             	mov    %r14,%rax
+  40115b:	b9 07 00 00 00       	mov    $0x7,%ecx
+  401160:	89 ca                	mov    %ecx,%edx
+  401162:	2b 10                	sub    (%rax),%edx
+  401164:	89 10                	mov    %edx,(%rax)
+  401166:	48 83 c0 04          	add    $0x4,%rax
+  40116a:	48 39 f0             	cmp    %rsi,%rax
+  40116d:	75 f1                	jne    401160 <phase_6+0x6c>
+  40116f:	be 00 00 00 00       	mov    $0x0,%esi
+  401174:	eb 21                	jmp    401197 <phase_6+0xa3>
+  401176:	48 8b 52 08          	mov    0x8(%rdx),%rdx
+  40117a:	83 c0 01             	add    $0x1,%eax
+  40117d:	39 c8                	cmp    %ecx,%eax
+  40117f:	75 f5                	jne    401176 <phase_6+0x82>
+  401181:	eb 05                	jmp    401188 <phase_6+0x94>
+  401183:	ba d0 32 60 00       	mov    $0x6032d0,%edx
+  401188:	48 89 54 74 20       	mov    %rdx,0x20(%rsp,%rsi,2)
+  40118d:	48 83 c6 04          	add    $0x4,%rsi
+  401191:	48 83 fe 18          	cmp    $0x18,%rsi
+  401195:	74 14                	je     4011ab <phase_6+0xb7>
+  401197:	8b 0c 34             	mov    (%rsp,%rsi,1),%ecx
+  40119a:	83 f9 01             	cmp    $0x1,%ecx
+  40119d:	7e e4                	jle    401183 <phase_6+0x8f>
+  40119f:	b8 01 00 00 00       	mov    $0x1,%eax
+  4011a4:	ba d0 32 60 00       	mov    $0x6032d0,%edx
+  4011a9:	eb cb                	jmp    401176 <phase_6+0x82>
+  4011ab:	48 8b 5c 24 20       	mov    0x20(%rsp),%rbx
+  4011b0:	48 8d 44 24 28       	lea    0x28(%rsp),%rax
+  4011b5:	48 8d 74 24 50       	lea    0x50(%rsp),%rsi
+  4011ba:	48 89 d9             	mov    %rbx,%rcx
+  4011bd:	48 8b 10             	mov    (%rax),%rdx
+  4011c0:	48 89 51 08          	mov    %rdx,0x8(%rcx)
+  4011c4:	48 83 c0 08          	add    $0x8,%rax
+  4011c8:	48 39 f0             	cmp    %rsi,%rax
+  4011cb:	74 05                	je     4011d2 <phase_6+0xde>
+  4011cd:	48 89 d1             	mov    %rdx,%rcx
+  4011d0:	eb eb                	jmp    4011bd <phase_6+0xc9>
+  4011d2:	48 c7 42 08 00 00 00 	movq   $0x0,0x8(%rdx)
+  4011d9:	00 
+  4011da:	bd 05 00 00 00       	mov    $0x5,%ebp
+  4011df:	48 8b 43 08          	mov    0x8(%rbx),%rax
+  4011e3:	8b 00                	mov    (%rax),%eax
+  4011e5:	39 03                	cmp    %eax,(%rbx)
+  4011e7:	7d 05                	jge    4011ee <phase_6+0xfa>
+  4011e9:	e8 4c 02 00 00       	callq  40143a <explode_bomb>
+  4011ee:	48 8b 5b 08          	mov    0x8(%rbx),%rbx
+  4011f2:	83 ed 01             	sub    $0x1,%ebp
+  4011f5:	75 e8                	jne    4011df <phase_6+0xeb>
+  4011f7:	48 83 c4 50          	add    $0x50,%rsp
+  4011fb:	5b                   	pop    %rbx
+  4011fc:	5d                   	pop    %rbp
+  4011fd:	41 5c                	pop    %r12
+  4011ff:	41 5d                	pop    %r13
+  401201:	41 5e                	pop    %r14
+  401203:	c3                   	retq   
+  ```
+  看到401106行调用了read_six_numbers函数，我们先输入6个数字，看看在栈上是如何分配的，有利于后面的分析
+  ```
+  (gdb) x/16gx $rsp
+0x7fffffffd650: 0x0000000200000001      0x0000000400000003
+0x7fffffffd660: 0x0000000600000005      0x0000000000000000
+0x7fffffffd670: 0x0000000000000000      0x00007ffff7e4c6ca
+0x7fffffffd680: 0x000000000000001d      0x00000000004013cc
+0x7fffffffd690: 0x0000000000000000      0x0000000000603910
+0x7fffffffd6a0: 0x0000000000402210      0x0000000000000000
+0x7fffffffd6b0: 0x0000000000400c90      0x00007fffffffd7c0
+0x7fffffffd6c0: 0x0000000000000000      0x0000000000400ecb
+  ```
+可以看到输入的6个数字被存储在了$rsp + 0,$rsp + 8,$rsp + 16,$rsp + 24,$rsp + 32,$rsp + 40的位置   
+读到``401153``行，可以得出``num[i](i为0-5) <= 6``，且``num[i] != num[i-1]``
+读到``40116d``行，可得``num[i] = 7 - num[i]``   
+后面执行了一段奇怪的循环，大概等价与一下c语言
+```c
+for(int i = 0; i < 6; i++)
+{
+  if(num[i] <= 1)
+  {
+    num_a[i] = 6304464;
+  }
+  else
+  {
+    num_a[i] = 6304464 + (num[i] - 1) * 8;
+  }
+}
+```
+可以看到6304464是一个很奇怪的数，我猜测应该是一个地址，我们来看看这个地址处是什么
+```
+(gdb) x/16gx 0x6032d0
+0x6032d0 <node1>:       0x000000010000014c      0x00000000006032e0
+0x6032e0 <node2>:       0x00000002000000a8      0x00000000006032f0
+0x6032f0 <node3>:       0x000000030000039c      0x0000000000603300
+0x603300 <node4>:       0x00000004000002b3      0x0000000000603310
+0x603310 <node5>:       0x00000005000001dd      0x0000000000603320
+0x603320 <node6>:       0x00000006000001bb      0x0000000000000000
+0x603330:       0x0000000000000000      0x0000000000000000
+0x603340 <host_table>:  0x0000000000402629      0x0000000000402643
+```
+所以这行：
+0x6032d0 <node1>: 0x000000010000014c 0x00000000006032e0
+表示：
+
+0x6032d0 这个地址在符号表里叫 node1（通常是全局变量/静态对象名）。   
+- 这个节点占 16 字节，前 8 字节是两个 32 位整数拼在一起（value 和 index）。
+- 后 8 字节是 next 指针，指向 0x6032e0（也就是 node2）。
+- 结合后面的输出，基本就是链表节点：
+node1 -> node2 -> node3 -> ... -> node6 -> NULL。
+由此可以得到，一共有6个节点，这个循环把1-6的数字映射成了这6个节点的地址，输入的数字为1时，映射成了node1的地址，输入的数字为2时，映射成了node2的地址。   
+我们顺便打印出每个节点的值，感觉后面应该会用的到。
+```
+(gdb) x/1dw 0x6032d0
+0x6032d0 <node1>:       332
+(gdb) x/1dw 0x6032e0
+0x6032e0 <node2>:       168
+(gdb) x/1dw 0x6032f0
+0x6032f0 <node3>:       924
+(gdb) x/1dw 0x603300
+0x603300 <node4>:       691
+(gdb) x/1dw 0x603310
+0x603310 <node5>:       477
+(gdb) x/1dw 0x603320
+0x603320 <node6>:       443
+```
+接下来的一段循环大概等价于以下c语言
+```c
+struct node
+{
+  int value;
+  struct node* next;
+};
+struct node* num_a[6];
+struct node* head = num_a[0];
+for(int i = 1; i < 6; i++)
+{
+  head->next = num_a[i];
+  head = head->next;
+}
+```
+可以知道，这段代码通过原先num[i]的值把num_a[i]的地址连接成了一个链表，head指向了这个链表的头节点。举个例子，假设num[6] = {3,2,1,6,5,4},则num_a[6] = {node3的地址,node2的地址,node1的地址,node6的地址,node5的地址,node4的地址}，通过这段循环把链表结构改为node3->node2->node1->node6->node5->node4->NULL。
+最后的一段循环大概等价于以下c语言
+```c
+struct node* p = num_a[0];
+for(int i = 0; i < 5; i++)
+{
+  if(p->value < p->next->value)
+  {
+    explode_bomb();
+  }
+  p = p->next;
+}
+```
+可以看到这段代码要求链表中的值必须是递减的，否则炸弹爆炸，根据我们上面打印出的值，我们需要让num_a[0]指向node3，num_a[1]指向node4，num_a[2]指向node5，num_a[3]指向node6，num_a[4]指向node1，num_a[5]指向node2，所以输入的数字为``3 2 1 6 5 4``。``wait``,别忘了输入的数字会被修改为``num[i] = 7 - num[i]``,所以我们输入的数字应该是``4 5 6 1 2 3``，我们尝试输入答案看看是否正确
+```c
+(gdb) run
+Starting program: /home/emilia/emilia/csapplab/bomblab/bomb/bomb 
+Welcome to my fiendish little bomb. You have 6 phases with
+which to blow yourself up. Have a nice day!
+Border relations with Canada have never been better.
+Phase 1 defused. How about the next one?
+1 2 4 8 16 32
+That's number 2.  Keep going!
+0 207
+Halfway there!
+7 0
+So you got that one.  Try this one.
+ionefg
+Good work!  On to the next...
+4 3 2 1 6 5
+Congratulations! You've defused the bomb!
+```
+可以看到phase_6成功解除了.至此，整个炸弹就被成功拆除了😫💫.
+差不多花了3个小时，只能说这个炸弹设计的非常巧妙😄    
+最后还有一段注释
+``Wow, they got it! But isn't something... missing? Perhaps something they overlooked? Mua ha ha ha ha!``不知道何意味。
+
+最后总结一下每个phase的解法：
+- phase_1: 输入字符串为``Border relations with Canada have never been better.``
+- phase_2: 输入数字为``1 2 4 8 16 32``
+- phase_3: 输入数字为``0 207``
+- phase_4: 输入数字为``7 0``(不是唯一解，还有``0 0``,``1 0``,``3 0``)
+- phase_5: 输入字符串为``ionefg``
+- phase_6: 输入数字为``4 3 2 1 6 5`` 
+
+最后记录一下解决phase_6的笔记，从箭头可以看出已经绕晕了。
+![alt text](image.png)
+
+
 
 
 
