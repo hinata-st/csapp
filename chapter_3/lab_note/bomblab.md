@@ -22,7 +22,7 @@
 | `info frame` | 查看当前栈帧信息 |
 | `print $rdi` | 查看 `rdi` 寄存器中的值 |
 | `info registers` | 查看所有寄存器信息 |
-| `x/16gx $rsp` | 查看 `rsp` 寄存器中的值（16: 看16个单元，g: 每个单元是8字节，x: 十六进制） |
+| `x/16gx $rsp` | 查看 `rsp` 寄存器中的值（16: 看16个单元，g: 每个单元是8字节，x: 十六进制）(b:1,h:2,w:4,l:8) |
 
 ## phase 1
 ```c
@@ -740,7 +740,275 @@ Congratulations! You've defused the bomb!
 - phase_6: 输入数字为``4 3 2 1 6 5`` 
 
 最后记录一下解决phase_6的笔记，从箭头可以看出已经绕晕了。
-![alt text](image.png)
+![error](image.png)
+
+看了一眼别人的过程，竟然发现竟然留有彩蛋？我们来尝试找找。继续查看汇编代码
+```
+0000000000401204 <fun7>:
+  401204:	48 83 ec 08          	sub    $0x8,%rsp
+  401208:	48 85 ff             	test   %rdi,%rdi
+  40120b:	74 2b                	je     401238 <fun7+0x34>
+  40120d:	8b 17                	mov    (%rdi),%edx
+  40120f:	39 f2                	cmp    %esi,%edx
+  401211:	7e 0d                	jle    401220 <fun7+0x1c>
+  401213:	48 8b 7f 08          	mov    0x8(%rdi),%rdi
+  401217:	e8 e8 ff ff ff       	callq  401204 <fun7>
+  40121c:	01 c0                	add    %eax,%eax
+  40121e:	eb 1d                	jmp    40123d <fun7+0x39>
+  401220:	b8 00 00 00 00       	mov    $0x0,%eax
+  401225:	39 f2                	cmp    %esi,%edx
+  401227:	74 14                	je     40123d <fun7+0x39>
+  401229:	48 8b 7f 10          	mov    0x10(%rdi),%rdi
+  40122d:	e8 d2 ff ff ff       	callq  401204 <fun7>
+  401232:	8d 44 00 01          	lea    0x1(%rax,%rax,1),%eax
+  401236:	eb 05                	jmp    40123d <fun7+0x39>
+  401238:	b8 ff ff ff ff       	mov    $0xffffffff,%eax
+  40123d:	48 83 c4 08          	add    $0x8,%rsp
+  401241:	c3                   	retq   
+
+0000000000401242 <secret_phase>:
+  401242:	53                   	push   %rbx
+  401243:	e8 56 02 00 00       	callq  40149e <read_line>
+  401248:	ba 0a 00 00 00       	mov    $0xa,%edx
+  40124d:	be 00 00 00 00       	mov    $0x0,%esi
+  401252:	48 89 c7             	mov    %rax,%rdi
+  401255:	e8 76 f9 ff ff       	callq  400bd0 <strtol@plt>
+  40125a:	48 89 c3             	mov    %rax,%rbx
+  40125d:	8d 40 ff             	lea    -0x1(%rax),%eax
+  401260:	3d e8 03 00 00       	cmp    $0x3e8,%eax
+  401265:	76 05                	jbe    40126c <secret_phase+0x2a>
+  401267:	e8 ce 01 00 00       	callq  40143a <explode_bomb>
+  40126c:	89 de                	mov    %ebx,%esi
+  40126e:	bf f0 30 60 00       	mov    $0x6030f0,%edi
+  401273:	e8 8c ff ff ff       	callq  401204 <fun7>
+  401278:	83 f8 02             	cmp    $0x2,%eax
+  40127b:	74 05                	je     401282 <secret_phase+0x40>
+  40127d:	e8 b8 01 00 00       	callq  40143a <explode_bomb>
+  401282:	bf 38 24 40 00       	mov    $0x402438,%edi
+  401287:	e8 84 f8 ff ff       	callq  400b10 <puts@plt>
+  40128c:	e8 33 03 00 00       	callq  4015c4 <phase_defused>
+  401291:	5b                   	pop    %rbx
+  401292:	c3                   	retq   
+  401293:	90                   	nop
+  401294:	90                   	nop
+  401295:	90                   	nop
+  401296:	90                   	nop
+  401297:	90                   	nop
+  401298:	90                   	nop
+  401299:	90                   	nop
+  40129a:	90                   	nop
+  40129b:	90                   	nop
+  40129c:	90                   	nop
+  40129d:	90                   	nop
+  40129e:	90                   	nop
+  40129f:	90                   	nop
+```
+发现了fun7和secret_phase函数，应该就是留下的彩蛋，我们研究一下要怎么进入这个彩蛋。我们全局搜索secret_phase,发现被phase_defused调用，在每个phase成功解除后都会执行phase_defused函数，所以我们只要在phase_defused函数里调用secret_phase函数就可以进入这个彩蛋了，我们来研究一下phase_defused函数的汇编代码
+```assembly
+00000000004015c4 <phase_defused>:
+  4015c4:	48 83 ec 78          	sub    $0x78,%rsp
+  4015c8:	64 48 8b 04 25 28 00 	mov    %fs:0x28,%rax
+  4015cf:	00 00 
+  4015d1:	48 89 44 24 68       	mov    %rax,0x68(%rsp)
+  4015d6:	31 c0                	xor    %eax,%eax
+  4015d8:	83 3d 81 21 20 00 06 	cmpl   $0x6,0x202181(%rip)        # 603760 <num_input_strings>
+  4015df:	75 5e                	jne    40163f <phase_defused+0x7b>  # 0x202181(%rip),发现这个值就是阶段数，必须为phase 6
+  4015e1:	4c 8d 44 24 10       	lea    0x10(%rsp),%r8
+  4015e6:	48 8d 4c 24 0c       	lea    0xc(%rsp),%rcx
+  4015eb:	48 8d 54 24 08       	lea    0x8(%rsp),%rdx
+  4015f0:	be 19 26 40 00       	mov    $0x402619,%esi       # "%d %d %s" 
+  4015f5:	bf 70 38 60 00       	mov    $0x603870,%edi       # "7 0"
+  4015fa:	e8 f1 f5 ff ff       	callq  400bf0 <__isoc99_sscanf@plt> 
+  4015ff:	83 f8 03             	cmp    $0x3,%eax                  # 输入3个参数
+  401602:	75 31                	jne    401635 <phase_defused+0x71>
+  401604:	be 22 26 40 00       	mov    $0x402622,%esi             # "DrEvil"
+  401609:	48 8d 7c 24 10       	lea    0x10(%rsp),%rdi
+  40160e:	e8 25 fd ff ff       	callq  401338 <strings_not_equal>
+  401613:	85 c0                	test   %eax,%eax
+  401615:	75 1e                	jne    401635 <phase_defused+0x71>
+  401617:	bf f8 24 40 00       	mov    $0x4024f8,%edi
+  40161c:	e8 ef f4 ff ff       	callq  400b10 <puts@plt>
+  401621:	bf 20 25 40 00       	mov    $0x402520,%edi
+  401626:	e8 e5 f4 ff ff       	callq  400b10 <puts@plt>
+  40162b:	b8 00 00 00 00       	mov    $0x0,%eax
+  401630:	e8 0d fc ff ff       	callq  401242 <secret_phase>
+  401635:	bf 58 25 40 00       	mov    $0x402558,%edi
+  40163a:	e8 d1 f4 ff ff       	callq  400b10 <puts@plt>
+  40163f:	48 8b 44 24 68       	mov    0x68(%rsp),%rax
+  401644:	64 48 33 04 25 28 00 	xor    %fs:0x28,%rax
+  40164b:	00 00 
+  40164d:	74 05                	je     401654 <phase_defused+0x90>
+  40164f:	e8 dc f4 ff ff       	callq  400b30 <__stack_chk_fail@plt>
+  401654:	48 83 c4 78          	add    $0x78,%rsp
+  401658:	c3                   	retq   
+  401659:	90                   	nop
+  40165a:	90                   	nop
+  40165b:	90                   	nop
+  40165c:	90                   	nop
+  40165d:	90                   	nop
+  40165e:	90                   	nop
+  40165f:	90                   	nop
+```
+可以发现进入secret_phase的条件是需要解开phase_6,且在phase_4时里输入``7 0 DrEvil``，我们来尝试一下
+```
+(gdb) run
+Starting program: /home/emilia/emilia/csapplab/bomblab/bomb/bomb 
+Welcome to my fiendish little bomb. You have 6 phases with
+which to blow yourself up. Have a nice day!
+Border relations with Canada have never been better.
+Phase 1 defused. How about the next one?
+1 2 4 8 16 32
+That's number 2.  Keep going!
+0 207
+Halfway there!
+7 0 DrEvil
+So you got that one.  Try this one.
+ionefg
+Good work!  On to the next...
+4 3 2 1 6 5
+Curses, you've found the secret phase!
+But finding it and solving it are quite different...
+```
+可以看到成功进入隐藏关卡。这时我们可以研究一下secret_phase的汇编代码
+```assembly
+0000000000401242 <secret_phase>:
+  401242:	53                   	push   %rbx
+  401243:	e8 56 02 00 00       	callq  40149e <read_line>
+  401248:	ba 0a 00 00 00       	mov    $0xa,%edx
+  40124d:	be 00 00 00 00       	mov    $0x0,%esi
+  401252:	48 89 c7             	mov    %rax,%rdi
+  401255:	e8 76 f9 ff ff       	callq  400bd0 <strtol@plt>    # 字符串转10进制
+  40125a:	48 89 c3             	mov    %rax,%rbx            # 转换后的10进制数字
+  40125d:	8d 40 ff             	lea    -0x1(%rax),%eax      # eax = rax - 1
+  401260:	3d e8 03 00 00       	cmp    $0x3e8,%eax         
+  401265:	76 05                	jbe    40126c <secret_phase+0x2a>    # eax - 0x3e8 <= 0 即 rax <= 1000
+  401267:	e8 ce 01 00 00       	callq  40143a <explode_bomb>
+  40126c:	89 de                	mov    %ebx,%esi       # esi = rbx
+  40126e:	bf f0 30 60 00       	mov    $0x6030f0,%edi    # edi = 0x6030f0
+  401273:	e8 8c ff ff ff       	callq  401204 <fun7>
+  401278:	83 f8 02             	cmp    $0x2,%eax
+  40127b:	74 05                	je     401282 <secret_phase+0x40>
+  40127d:	e8 b8 01 00 00       	callq  40143a <explode_bomb>
+  401282:	bf 38 24 40 00       	mov    $0x402438,%edi
+  401287:	e8 84 f8 ff ff       	callq  400b10 <puts@plt>
+  40128c:	e8 33 03 00 00       	callq  4015c4 <phase_defused>
+  401291:	5b                   	pop    %rbx
+  401292:	c3                   	retq   
+  401293:	90                   	nop
+  401294:	90                   	nop
+  401295:	90                   	nop
+  401296:	90                   	nop
+  401297:	90                   	nop
+  401298:	90                   	nop
+  401299:	90                   	nop
+  40129a:	90                   	nop
+  40129b:	90                   	nop
+  40129c:	90                   	nop
+  40129d:	90                   	nop
+  40129e:	90                   	nop
+  40129f:	90                   	nop
+```
+我们可以看到这个隐藏关卡要求输入一个数字，这个数字必须小于等于1000，且经过fun7函数处理后返回值必须为2，我们来分析一下fun7函数
+```assembly
+0000000000401204 <fun7>:
+  401204:	48 83 ec 08          	sub    $0x8,%rsp
+  401208:	48 85 ff             	test   %rdi,%rdi
+  40120b:	74 2b                	je     401238 <fun7+0x34>   # rdi != 0
+  40120d:	8b 17                	mov    (%rdi),%edx          # edx = *rdi
+  40120f:	39 f2                	cmp    %esi,%edx            
+  401211:	7e 0d                	jle    401220 <fun7+0x1c>    # edx > esi
+  401213:	48 8b 7f 08          	mov    0x8(%rdi),%rdi        # rdi = *(rdi + 8)
+  401217:	e8 e8 ff ff ff       	callq  401204 <fun7>         # 递归调用 fun7(rdi + 8, esi)
+  40121c:	01 c0                	add    %eax,%eax             # eax = 2 * eax   左子树
+  40121e:	eb 1d                	jmp    40123d <fun7+0x39>
+  401220:	b8 00 00 00 00       	mov    $0x0,%eax             # edx <= esi eax = 0
+  401225:	39 f2                	cmp    %esi,%edx            
+  401227:	74 14                	je     40123d <fun7+0x39>     # edx == esi 直接返回 0
+  401229:	48 8b 7f 10          	mov    0x10(%rdi),%rdi        # rdi = *(rdi + 16)
+  40122d:	e8 d2 ff ff ff       	callq  401204 <fun7>           # 递归调用 fun7(rdi + 16, esi)    
+  401232:	8d 44 00 01          	lea    0x1(%rax,%rax,1),%eax    # eax = 2 * eax + 1  右子树
+  401236:	eb 05                	jmp    40123d <fun7+0x39>       # edx < esi 直接返回 2 * fun7(rdi + 16, esi) + 1  
+  401238:	b8 ff ff ff ff       	mov    $0xffffffff,%eax
+  40123d:	48 83 c4 08          	add    $0x8,%rsp
+  401241:	c3                   	retq
+```
+可以看到fun7是一个二叉树的递归遍历函数，rdi是树的根节点地址，esi是要查找的值，返回值为0表示在树中找到了这个值，返回值为2 * fun7(rdi + 8, esi)表示在左子树中找到了这个值，返回值为 2 * fun7(rdi + 16, esi) + 1 表示在右子树中找到了这个值，返回值为0xffffffff表示没有找到这个值。我们来看看0x6030f0处是什么
+```
+(gdb) x/64gx 0x6030f0
+0x6030f0 <n1>:  0x0000000000000024      0x0000000000603110
+0x603100 <n1+16>:       0x0000000000603130      0x0000000000000000
+0x603110 <n21>: 0x0000000000000008      0x0000000000603190
+0x603120 <n21+16>:      0x0000000000603150      0x0000000000000000
+0x603130 <n22>: 0x0000000000000032      0x0000000000603170
+0x603140 <n22+16>:      0x00000000006031b0      0x0000000000000000
+0x603150 <n32>: 0x0000000000000016      0x0000000000603270
+0x603160 <n32+16>:      0x0000000000603230      0x0000000000000000
+0x603170 <n33>: 0x000000000000002d      0x00000000006031d0
+0x603180 <n33+16>:      0x0000000000603290      0x0000000000000000
+0x603190 <n31>: 0x0000000000000006      0x00000000006031f0
+0x6031a0 <n31+16>:      0x0000000000603250      0x0000000000000000
+0x6031b0 <n34>: 0x000000000000006b      0x0000000000603210
+0x6031c0 <n34+16>:      0x00000000006032b0      0x0000000000000000
+0x6031d0 <n45>: 0x0000000000000028      0x0000000000000000
+0x6031e0 <n45+16>:      0x0000000000000000      0x0000000000000000
+0x6031f0 <n41>: 0x0000000000000001      0x0000000000000000
+0x603200 <n41+16>:      0x0000000000000000      0x0000000000000000
+0x603210 <n47>: 0x0000000000000063      0x0000000000000000
+0x603220 <n47+16>:      0x0000000000000000      0x0000000000000000
+0x603230 <n44>: 0x0000000000000023      0x0000000000000000
+0x603240 <n44+16>:      0x0000000000000000      0x0000000000000000
+0x603250 <n42>: 0x0000000000000007      0x0000000000000000
+0x603260 <n42+16>:      0x0000000000000000      0x0000000000000000
+--Type <RET> for more, q to quit, c to continue without paging--c
+0x603270 <n43>: 0x0000000000000014      0x0000000000000000
+0x603280 <n43+16>:      0x0000000000000000      0x0000000000000000
+0x603290 <n46>: 0x000000000000002f      0x0000000000000000
+0x6032a0 <n46+16>:      0x0000000000000000      0x0000000000000000
+0x6032b0 <n48>: 0x00000000000003e9      0x0000000000000000
+0x6032c0 <n48+16>:      0x0000000000000000      0x0000000000000000
+0x6032d0 <node1>:       0x000000010000014c      0x00000000006032e0
+0x6032e0 <node2>:       0x00000002000000a8      0x00000000006032f0
+```
+可以看到0x6030f0是一个二叉树的根节点地址，每个节点占32字节，前8字节是节点的值，后16字节分别是左右子树的地址，最后8字节是无用的。我们可以根据fun7函数的逻辑分析出这个二叉树的结构如下：
+```
+         36
+    8          50
+ 6    22    45    107
+1 7 20 35 40  47 63  1001
+```
+由scret_phase函数可得fun7函数的返回值必须是2，由fun7函数的返回逻辑可知，必须在二叉树中找到这个值，且必须先经过左子树再经过右子树才能找到这个值，因为2 = 2 *（x）,x = 2 * 0 + 1,所以这个值就是22，所以输入的数字为``22``，我们来尝试一下
+```
+(gdb) run
+Starting program: /home/emilia/emilia/csapplab/bomblab/bomb/bomb 
+Welcome to my fiendish little bomb. You have 6 phases with
+which to blow yourself up. Have a nice day!
+Border relations with Canada have never been better.
+Phase 1 defused. How about the next one?
+1 2 4 8 16 32
+That's number 2.  Keep going!
+0 207
+Halfway there!
+7 0 DrEvil
+So you got that one.  Try this one.
+ionefg
+Good work!  On to the next...
+4 3 2 1 6 5
+Curses, you've found the secret phase!
+But finding it and solving it are quite different...
+22
+Wow! You've defused the secret stage!
+Congratulations! You've defused the bomb!
+```
+
+最后总结完整的每个phase的解法：
+- phase_1: 输入字符串为``Border relations with Canada have never been better.``
+- phase_2: 输入数字为``1 2 4 8 16 32``
+- phase_3: 输入数字为``0 207``
+- phase_4: 输入数字为``7 0 DrEvil``(不是唯一解，还有``0 0``,``1 0``,``3 0``)
+- phase_5: 输入字符串为``ionefg``
+- phase_6: 输入数字为``4 3 2 1 6 5``
+- secret_phase: 输入数字为``22``
+
 
 
 
