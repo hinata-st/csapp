@@ -742,7 +742,9 @@ Congratulations! You've defused the bomb!
 最后记录一下解决phase_6的笔记，从箭头可以看出已经绕晕了。
 ![error](image.png)
 
-看了一眼别人的过程，竟然发现竟然留有彩蛋？我们来尝试找找。继续查看汇编代码
+## secret_phase
+
+看了一眼别人的过程，竟然发现还有彩蛋？我们来尝试找找。继续查看汇编代码
 ```
 0000000000401204 <fun7>:
   401204:	48 83 ec 08          	sub    $0x8,%rsp
@@ -969,7 +971,7 @@ But finding it and solving it are quite different...
 0x6032d0 <node1>:       0x000000010000014c      0x00000000006032e0
 0x6032e0 <node2>:       0x00000002000000a8      0x00000000006032f0
 ```
-可以看到0x6030f0是一个二叉树的根节点地址，每个节点占32字节，前8字节是节点的值，后16字节分别是左右子树的地址，最后8字节是无用的。我们可以根据fun7函数的逻辑分析出这个二叉树的结构如下：
+可以看到0x6030f0是一个二叉树的根节点地址，每个节点占32字节，前8字节是节点的值，后16字节分别是左右子树的地址，最后8字节是无用的。我们可以根据这个二叉树的左右节点地址分析出这个二叉树的结构如下：
 ```
          36
     8          50
@@ -999,7 +1001,9 @@ But finding it and solving it are quite different...
 Wow! You've defused the secret stage!
 Congratulations! You've defused the bomb!
 ```
+也是成功的拆除了这个炸弹，说明整个bomblab已经结束了。   
 
+## solution
 最后总结完整的每个phase的解法：
 - phase_1: 输入字符串为``Border relations with Canada have never been better.``
 - phase_2: 输入数字为``1 2 4 8 16 32``
