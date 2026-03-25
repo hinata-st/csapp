@@ -12,6 +12,7 @@
 - [bomblab 笔记](/chapter_3/lab_note/bomblab.md)
 
 ## 第7章 链接
+- [笔记](/chapter_7/note/chapter_7_01.png)
 
 ## 第8章 异常控制流
 
