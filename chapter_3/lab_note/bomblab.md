@@ -1,6 +1,6 @@
-### 实验2 炸弹实验
+### ***bomblab***
 
-首先打开bomb.c文件,可以看到6个phase,对应6个解除炸弹的地方，我们先看第一个phase
+首先打开bomb.c文件,可以看到6个phase,对应6个解除炸弹的地方
 
 由于需要用到gdb调试器，下面给出常用的gdb指令
 | 指令 | 说明 |
@@ -33,7 +33,7 @@
 				      * Let me know how they did it. */
     printf("Phase 1 defused. How about the next one?\n");
 ```
-由于lab为了保密，只提供了bomb.0文件，我们只能反汇编bomb.0文件
+由于lab为了保密，只提供了bomb.o文件，我们只能反汇编bomb.0文件
 
 输入```> objdump -d ./bomb >> bomb.s```来得到汇编代码
 
