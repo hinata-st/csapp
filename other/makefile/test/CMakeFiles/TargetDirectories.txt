@@ -1,0 +1,3 @@
+C:/Users/86199/learn-git/csapp/other/makefile/test/CMakeFiles/hello.dir
+C:/Users/86199/learn-git/csapp/other/makefile/test/CMakeFiles/edit_cache.dir
+C:/Users/86199/learn-git/csapp/other/makefile/test/CMakeFiles/rebuild_cache.dir
