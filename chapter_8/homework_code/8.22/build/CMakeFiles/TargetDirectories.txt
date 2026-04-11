@@ -1,0 +1,5 @@
+C:/Users/86199/learn-git/csapp/chapter_8/homework_code/8.22/build/CMakeFiles/mysystem.dir
+C:/Users/86199/learn-git/csapp/chapter_8/homework_code/8.22/build/CMakeFiles/exit-code.dir
+C:/Users/86199/learn-git/csapp/chapter_8/homework_code/8.22/build/CMakeFiles/wait-sig.dir
+C:/Users/86199/learn-git/csapp/chapter_8/homework_code/8.22/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/86199/learn-git/csapp/chapter_8/homework_code/8.22/build/CMakeFiles/ZERO_CHECK.dir
