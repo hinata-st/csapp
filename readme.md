@@ -11,10 +11,15 @@
 - [笔记](/chapter_3/note/chapter3(1)_01.png)
 - [bomblab 笔记](/chapter_3/lab_note/bomblab.md)
 
+## 第4章 处理器体系结构
+- [笔记](/chapter_4/note.md)
+
 ## 第7章 链接
 - [笔记](/chapter_7/note/chapter_7_01.png)
 
 ## 第8章 异常控制流
+- [笔记](/chapter_8/note/chapter_8_01.png)
+- [shlab 笔记](/chapter_8/shlab/shlab.md)
 
 ## 第9章 虚拟内存
 
@@ -23,6 +28,9 @@
 ## 第11章 
 
 ## 第12章 并发编程
+
+## other
+- [makefile and cmake](/other/makefile/makefile.md)
 
 ### 家庭作业参考答案
 
