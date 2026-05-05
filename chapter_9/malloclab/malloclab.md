@@ -17,6 +17,8 @@ void *mm_realloc(void *ptr, size_t size);
 
 在csapp中，已经提供了一个简单的内存分配器实现，是基于隐式空闲链表的。我们先复刻一下再进行优化.
 
+代码见``./malloclab/textbook.c``
+
 复刻后的结果如下：
 
 ```
