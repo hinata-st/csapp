@@ -22,10 +22,13 @@ void *mm_realloc(void *ptr, size_t size);
 - 整个堆构成一条链表，包含空闲块和非空闲块
 - 块结构：
 
-![alt text](image.png)
+![alt text](/chapter_9/malloclab/picture/image.png)
+
 - 添加特殊块：序言块和尾块，方便边界处理。
 - 隐式链表整体内存布局：
-![alt text](image-1.png)
+
+![alt text](/chapter_9/malloclab/picture/image-1.png)
+
 - 任意内存地址必然属于某一个块，不存在不属于空闲、非空闲块的内存地址
 - 分配块策略：
     - 遍历链表查找大于SIZE的空闲块分配，首次适配；执行放置：如果该空闲块足够大，则割出前面SIZE的空间，后半部分仍然为空闲块
@@ -74,7 +77,7 @@ P = wU + (1-w)min(1,T/Tlibc),其中w是权重，U是空间利用率，T是我们
 
 块结构：
 
-![alt text](image-2.png)
+![alt text](/chapter_9/malloclab/picture/image-2.png)
 
 ## 分离链表
 
@@ -778,6 +781,39 @@ static inline void insert_node(void *bp) {
 | **9 (realloc)** | **20%** | **63%** | **+43%** |
 | **10 (realloc2)** | **37%** | **51%** | **+14%** |
 | **总分** | **85** | **88** | **+3** |
+
+malloclab实验结束，后面慢慢优化。
+
+## DEBUG
+
+```c
+log_log(LOG_TRACE, __FILE__, __LINE__, __VA_ARGS__)
+
+if (log_initialized == 0)
+    {                             // 防止重复调用 mm_init 导致回调函数重复注册。
+        log_set_level(LOG_TRACE); // 显示DEBUG及以上级别的日志
+        log_set_quiet(1);
+        time_t now = time(NULL);
+        struct tm *tm = localtime(&now);
+        // 创建带时间戳的文件名
+        char filename[64];
+        snprintf(filename, sizeof(filename), "%02d-%02d-%02d_mm.log",
+                 tm->tm_hour, tm->tm_min, tm->tm_sec);
+        FILE *log_file = fopen(filename, "a");
+        if (!log_file)
+        {
+            fprintf(stderr, "无法打开日志文件\n");
+            return;
+        }
+        log_add_fp(log_file, LOG_TRACE);
+        log_initialized = 1;
+        printf("Log file name: %s\n", filename);
+    }
+
+#define ASSERT(COND) assert(COND)
+#define REQUIRES(COND) assert(COND)
+#define ENSURES(COND) assert(COND)
+```
 
 
 
