@@ -207,5 +207,114 @@ int main(int argc, char *argv[]) {
 
 其中端口号51213是内核分配的临时端口号，其中端口号80是和web服务相关联的知名端口号。
 
-## 套接字接口
+## 套接字接口       
 
+套接字接口是一组函数，它们和Unix I/O函数结合起来，用以创建网络引用
+
+![alt text](image-8.png)
+
+### 套接字地址结构
+
+从Linux内核的角度看，一个套接字就是一个通信的一个端点，从Linux程序的角度来看，套接字就是一个有相应描述符的打开文件。
+
+```c
+/* IP socket address structure */
+struct sockaddr_in {
+    sa_family_t sin_family; // 地址族(AF_INET)
+    in_port_t sin_port; // 16位端口号
+    struct in_addr sin_addr; // 32位IP地址
+    char sin_zero[8]; // 填充字节，未使用
+};
+
+/* Generic socket address structure */
+struct sockaddr {
+    sa_family_t sa_family; // 地址族
+    char sa_data[14]; // 地址数据
+};
+```
+
+IP地址和端口号总是以网络字节顺序(大端法)存放的。
+
+套接字地址结构体`sockaddr_in`是专门为IP套接字定义的，而`sockaddr`是一个通用的套接字地址结构体，适用于所有类型的套接字。函数`socket`和`bind`等使用`sockaddr`结构体作为参数，因此需要将`sockaddr_in`类型的地址转换为`sockaddr`类型。
+
+### socket函数
+
+客户端服务器使用socket函数来创建一个套接字描述符
+
+```c
+#include <sys/socket.h>
+#include <sys/types.h>
+int socket(int domain, int type, int protocol);
+// 返回：成功时返回一个新的套接字描述符，出错时返回-1
+```
+
+使套接字成为连接的一个端点，就用如下硬编码的参数来调用 socket 函数：
+
+``clientfd = Socket(AF_INET, SOCK_STREAM, 0);``
+
+其中， AF_INET 表明我们正在使用 32 IP 地址，而 SOCK_STREAM 表示这个套接字是连接的一个端点。不过最好的方法是用 ge addrinfo 函数来自动生成这些参数，这样代码就与协议无关了。
+
+socket返回的clientfd描述符仅是部分打开的，还不能用于读写
+
+### connect函数
+
+客户端通过调用 connect 函数来建立和服务器的连接。
+
+```c
+#include <sys/socket.h>
+
+int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+// 返回：成功时返回0，出错时返回-1
+```
+
+connect 函数试图与套接字地址为 addr 的服务器建立一个因特网连接，其中 addrlen是sizeof(sockaddr_in) connect 函数会阻塞，一直到连接成功建立或是发生错误。如果成功， clientfd 描述符现在就准备好可以读写了，并且得到的连接是由套接字对
+
+``(x:y, addr.sin_addr:addr.sin_port)``
+
+其中 x 表示客户端的 IP 地址，而 y 表示临时端口，它唯一地确定了客户端主机上的客户端进程。对于 socket, 最好的方法是用 getaddrinfo 来为 connect 提供参数
+
+### bind函数
+
+套接字函数-bind、让sten accept, 服务器用它们来和客户端建立连接。
+
+```c
+#include <sys/socket.h>
+
+int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+// 返回：成功时返回0，出错时返回-1
+```
+
+bind 函数告诉内核将 addr 中的服务器套接字地址和套接字描述符 sockfd 联系起来。参数 addrlen 就是 sizeof(sockaddr_in) 。对于 sock 琴和 connect, 最好的方法是用 getaddrinfo 来为 bind 提供参数
+
+### listen函数
+
+客户端是发起连接请求的主动实体。服务器是等待来自客户端的连接请求的被动实体。
+
+```c
+#include <sys/socket.h>
+
+客户端是发起连接请求的主动实体。服务器是等待来自客户端的连接请求的被动实体。默认情况下，内核会认为 socket 函数创建的描述符对应于主动套接字 (active socket), 它存在于一个连接的客户端。服务器调用 listen 函数告诉内核，描述符是被服务器
+而不是客户端使用的。
+
+int listen(int sockfd, int backlog);
+// 返回：成功时返回0，出错时返回-1
+```
+
+listen 函数将 sockfd 从一个主动套接字转化为一个监听套接宇 (listening socket) , 该套接字可以接受来自客户端的连接请求。 backlog 参数暗示了内核在开始拒绝连接请求之前，队列中要排队的未完成的连接请求的数最。
+
+### accept函数
+
+服务器通过调用 accep 七函数来等待来自客户端的连接请求。
+
+```c
+#include <sys/socket.h>
+
+int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+// 返回：成功时返回一个新的套接字描述符，出错时返回-1
+```
+
+accept 函数等待来自客户端的连接请求到达侦听描述符 listenfd, 然后在 addr填写客户端的套接字地址，并返回一个已连接描述符 (connected descriptor) , 这个描述符可被用来利用 Unix I/0 函数与客户端通信。
+
+监听描述符和已连接描述符之间的区别使很多人感到迷惑。监听描述符是作为客户端连接请求的一个端点。它通常被创建一次，并存在千服务器的整个生命周期。已连接描述符是客户端和服务器之间已经建立起来了的连接的一个端点。服务器每次接受连接请求时都会创建一次，它只存在于服务器为 个客户端服务的过程中。
+
+![alt text](image-9.png)
