@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="720" viewBox="0 0 1120 720" role="img" aria-labelledby="title desc">
+  <title id="title">互联网、局域网、广域网、英特网关系图</title>
+  <desc id="desc">说明网络、局域网、广域网、互联网络和全球 IP 因特网之间的层次与实现关系。</desc>
+  <defs>
+    <style>
+      .canvas { fill: #f7f8fb; }
+      .box { fill: #ffffff; stroke: #2f3b52; stroke-width: 2.5; }
+      .group { fill: #eaf2ff; stroke: #2d5f9a; stroke-width: 2.5; }
+      .lan { fill: #eaf7ef; stroke: #2f7d4c; stroke-width: 2.5; }
+      .wan { fill: #fff3dc; stroke: #a36c16; stroke-width: 2.5; }
+      .internet { fill: #f1eafd; stroke: #6d4ca5; stroke-width: 2.5; }
+      .internet-big { fill: #ffeceb; stroke: #b0493f; stroke-width: 2.5; }
+      .title { font: 700 28px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #172033; }
+      .label { font: 700 23px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #172033; }
+      .text { font: 18px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #263043; }
+      .small { font: 16px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #445066; }
+      .mono { font: 700 16px Consolas, "Microsoft YaHei", monospace; fill: #263043; }
+      .arrow { stroke: #52627a; stroke-width: 2.4; fill: none; marker-end: url(#arrowhead); }
+      .connector { stroke: #52627a; stroke-width: 2.2; fill: none; stroke-dasharray: 7 7; }
+      .node { fill: #ffffff; stroke: #52627a; stroke-width: 2; }
+      .router { fill: #2f3b52; }
+    </style>
+    <marker id="arrowhead" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#52627a"/>
+    </marker>
+  </defs>
+
+  <rect class="canvas" width="1120" height="720" rx="22"/>
+  <text class="title" x="560" y="54" text-anchor="middle">互联网、局域网、广域网、英特网：概念关系</text>
+
+  <rect class="group" x="48" y="92" width="1024" height="572" rx="18"/>
+  <text class="label" x="82" y="134">网络 Network</text>
+  <text class="text" x="82" y="166">泛指让主机通过硬件和软件资源通信的系统，可按覆盖范围和连接方式继续细分。</text>
+
+  <rect class="lan" x="86" y="206" width="292" height="178" rx="14"/>
+  <text class="label" x="232" y="245" text-anchor="middle">LAN 局域网</text>
+  <text class="text" x="116" y="283">范围小：房间、楼层、校园</text>
+  <text class="text" x="116" y="314">典型技术：以太网 Ethernet</text>
+  <text class="small" x="116" y="347">多个以太网段可通过网桥</text>
+  <text class="small" x="116" y="372">连接成桥接以太网。</text>
+
+  <rect class="wan" x="742" y="206" width="292" height="178" rx="14"/>
+  <text class="label" x="888" y="245" text-anchor="middle">WAN 广域网</text>
+  <text class="text" x="772" y="283">范围大：城市、国家、洲际</text>
+  <text class="text" x="772" y="314">常见形态：高速点到点链路</text>
+  <text class="small" x="772" y="347">常用于把远距离网络</text>
+  <text class="small" x="772" y="372">连接到一起。</text>
+
+  <rect class="internet" x="238" y="426" width="644" height="154" rx="16"/>
+  <text class="label" x="560" y="466" text-anchor="middle">internet 互联网络</text>
+  <text class="text" x="278" y="505">用路由器把多个可能不兼容的 LAN 和 WAN 连接起来。</text>
+  <text class="text" x="278" y="538">关键思想：统一命名、统一传送机制，以及协议封装。</text>
+  <text class="mono" x="560" y="568" text-anchor="middle">LAN + WAN + routers + protocol =&gt; internet</text>
+
+  <rect class="internet-big" x="360" y="602" width="400" height="74" rx="14"/>
+  <text class="label" x="560" y="633" text-anchor="middle">Internet / 全球 IP 因特网</text>
+  <text class="small" x="560" y="660" text-anchor="middle">最著名、最成功的互联网络实现，基于 TCP/IP 协议族。</text>
+
+  <path class="arrow" d="M 378 295 C 438 295, 438 500, 238 500"/>
+  <path class="arrow" d="M 742 295 C 682 295, 682 500, 882 500"/>
+  <path class="arrow" d="M 560 580 L 560 602"/>
+
+  <circle class="node" cx="160" cy="430" r="18"/>
+  <circle class="node" cx="214" cy="430" r="18"/>
+  <circle class="node" cx="187" cy="478" r="18"/>
+  <path class="connector" d="M 178 430 L 196 430 M 170 446 L 187 460 M 204 446 L 192 462"/>
+  <rect class="router" x="268" y="456" width="34" height="34" rx="7"/>
+  <path class="connector" d="M 232 462 L 268 473"/>
+  <text class="small" x="84" y="528">局域网负责近距离主机互连</text>
+
+  <rect class="router" x="818" y="456" width="34" height="34" rx="7"/>
+  <path class="connector" d="M 852 473 C 904 430, 950 430, 1002 473"/>
+  <rect class="router" x="1002" y="456" width="34" height="34" rx="7"/>
+  <text class="small" x="800" y="528">广域网负责远距离网络互连</text>
+</svg>
