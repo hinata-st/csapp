@@ -25,21 +25,21 @@
 
 以太网段
 
-![alt text](image-1.png)
+![alt text](picture/image-1.png)
 
 使用一些电缆和叫做网桥的小盒子，多个以太网段可以连接成较大的局域网，称为桥接以太网。在层次的更高级别中，多个不兼容的局域网可以通过叫做路由器的特殊计算机连接起来，组成一个**internet(互联网络)**，每台路由器对于他所连接到的每个网络都有一个适配器(端口),路由器也能连接高速点到点电话连接，这是称为**WAN(Wide Area Network, 广域网)**的网络示例。
 
 桥接以太网
 
-![alt text](image-2.png)
+![alt text](picture/image-2.png)
 
 局域网概念视图
 
-![alt text](image-3.png)
+![alt text](picture/image-3.png)
 
 一个小型的互联网络，三台路由器连接起来两个局域网和两个广域网
 
-![alt text](image.png)
+![alt text](picture/image.png)
 
 互联网络至关重要的特性是，他能由采用完全不同和不兼容技术的各种局域网和广域网组成，每台主机和其他每台主机都是物理连接的。
 
@@ -50,13 +50,13 @@
 
 **互联网络思想的精髓，封装是关键。**
 
-![alt text](image-4.png)
+![alt text](picture/image-4.png)
 
 ## 全球IP因特网
 
 全球**IP因特网**是最著名和成功的互联网络实现。
 
-![alt text](image-5.png)
+![alt text](picture/image-5.png)
 
 每台因特网主机都运行实现TCP/IP协议的软件，几乎每个现代计算机系统都支持这个协议，因特网的客户端和服务器混合使用套接字接口函数和Unix I/O函数来进行通信。
 
@@ -183,7 +183,7 @@ int main(int argc, char *argv[]) {
 
 因特网域名层次结构的一部分
 
-![alt text](image-6.png)
+![alt text](picture/image-6.png)
 
 因特网定义了域名集合和IP地址集合之间的映射，这个映射是通过分布世界范围内的数据库(称为DNS)来维护的。
 
@@ -203,7 +203,7 @@ int main(int argc, char *argv[]) {
 
 其中`cliaddr`和`servaddr`分别是客户端和服务器的IP地址，`clipot`和`servport`分别是客户端和服务器的端口号。
 
-![alt text](image-7.png)
+![alt text](picture/image-7.png)
 
 其中端口号51213是内核分配的临时端口号，其中端口号80是和web服务相关联的知名端口号。
 
@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
 
 套接字接口是一组函数，它们和Unix I/O函数结合起来，用以创建网络引用
 
-![alt text](image-8.png)
+![alt text](picture/image-8.png)
 
 ### 套接字地址结构
 
@@ -317,4 +317,4 @@ accept 函数等待来自客户端的连接请求到达侦听描述符 listenfd,
 
 监听描述符和已连接描述符之间的区别使很多人感到迷惑。监听描述符是作为客户端连接请求的一个端点。它通常被创建一次，并存在千服务器的整个生命周期。已连接描述符是客户端和服务器之间已经建立起来了的连接的一个端点。服务器每次接受连接请求时都会创建一次，它只存在于服务器为 个客户端服务的过程中。
 
-![alt text](image-9.png)
+![alt text](picture/image-9.png)
