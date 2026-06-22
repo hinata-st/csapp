@@ -1,4 +1,5 @@
 {
     "trae.tab.enableRename": false,
-    "trae.tab.enableAutoImport": false
+    "trae.tab.enableAutoImport": false,
+    "cmake.sourceDirectory": "D:/Destop/my_H/learn/csapp/csapp/other/makefile/test"
 }

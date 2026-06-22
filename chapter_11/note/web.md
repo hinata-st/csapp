@@ -323,4 +323,77 @@ accept 函数等待来自客户端的连接请求到达侦听描述符 listenfd,
 
 ![alt text](picture/image-9.png)
 
+### 主机和服务的转换
+
+Linux提供了一些强大的函数(getaddrinfo和getnameinfo)来实现主机名和服务名与IP地址和端口号之间的转换。
+
+### 套接字接口的辅助函数
+
+#### open_clientfd函数
+
+```c
+#include "csapp.h"
+int open_clientfd(char *hostname, char *port);
+```
+
+open_clientfd函数建立与服务器的连接，该服务器运行在主机hosthome上，并在端口号port上监听连接请求
+
+#### open_listenfd函数
+
+```c
+#include "csapp.h"
+int open_listenfd(char *port);
+```
+open_listenfd函数创建一个监听描述符，并将其绑定到本地地址上，端口号由参数port指定。这个监听描述符准备好接受来自客户端的连接请求了。
+
+### echo客户端和服务器的示例
+
+***
+
+## Web服务器
+
+Web客户端和服务器之间的交互用的是一个基于文本的应用级协议，叫作HTTP(HyperText Transfer Protocol)。HTTP协议定义了客户端和服务器之间的请求和响应消息的格式，以及它们之间的交互方式。
+
+Web内容可以用一种叫做HTML的语言来编写
+
+### Web内容
+
+对于Web客户端和服务器而言，内容是与一个MIME类型相关的字节序列。
+
+Web服务器以两种不同的方式向客户端提供内容
+
+- 取一个磁盘文件，并将它的内容返回给客户端
+- 运行一个程序，并将程序的输出返回给客户端
+
+每条由Web服务器返回的内容都是和他管理的某个文件相关联的，这些文件中的每一个都有一个唯一的名字，叫做URL(Uniform Resource Locator)，URL是一个字符串，指定了这个文件的名字和位置。
+
+执行文件的URL可以在文件名后包括程序参数
+
+```
+http://hostname:port/exec?arg1=value1&arg2=value2
+```
+
+`?`字符分隔文件名和参数，`&`字符分隔参数，参数由一个名字和一个值组成，他们之间用`=`字符分隔.
+
+### HTTP事务
+
+#### HTTP请求
+
+一个HTTP请求的组成是这样的:一个请求行，后面跟随零个或更多个请求报头，再跟随一个空的文本行来终止报头列表。一个请求行的形式是``nethod URI version``
+
+#### HTTP响应
+
+一个HTTP响应的组成是这样的:一个状态行，后面跟随零个或更多个响应报头，再跟随一个空的文本行来终止报头列表，最后是可选的响应正文。一个状态行的形式是``version status_code reason_phrase``
+
+### 服务动态内容
+
+- 客户端如何将程序参数传递给服务器
+- 服务器如何将参数传递给子进程
+- 服务器如何将其他信息传递给子进程
+- 子进程将它的输出发送到哪里
+
+***
+
+## TINY Web服务器
+
 
